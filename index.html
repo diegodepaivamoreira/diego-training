@@ -8,71 +8,73 @@
 <style>
 body{
   margin:0;
-  background:#080808;
+  background:#050505;
   color:#fff;
   font-family:Arial;
 }
 
-#app{
-  max-width:480px;
-  margin:auto;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-}
+#app{max-width:480px;margin:auto;}
 
-.screen{
-  flex:1;
-  display:none;
+.header{
   padding:20px;
-  overflow:auto;
 }
 
-.screen.active{ display:block; }
-
-h1{ color:#d4ff00; }
+.title{
+  color:#d4ff00;
+  font-size:28px;
+}
 
 .card{
   background:#111;
+  border-radius:14px;
   padding:15px;
-  border-radius:12px;
-  margin-bottom:10px;
+  margin:10px;
 }
 
-.done{
-  opacity:0.4;
-  text-decoration:line-through;
-}
-
-button{
+.btn{
   background:#d4ff00;
+  color:#000;
+  padding:14px;
   border:none;
-  padding:10px;
-  border-radius:8px;
-  font-weight:bold;
+  border-radius:10px;
   width:100%;
-  margin-top:10px;
+  font-weight:bold;
 }
 
-nav{
+.exercise{
+  margin-top:15px;
+}
+
+.series{
   display:flex;
-  border-top:1px solid #222;
+  gap:8px;
+  margin-top:5px;
 }
 
-nav button{
-  flex:1;
-  background:#111;
-  color:#777;
+input{
+  background:#000;
+  border:1px solid #333;
+  border-radius:8px;
+  color:#fff;
+  padding:8px;
+  width:60px;
 }
 
-nav button.active{
-  color:#d4ff00;
+.check{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:2px solid #444;
+}
+
+.check.done{
+  background:#00e676;
 }
 
 .timer{
-  font-size:28px;
   text-align:center;
-  margin:10px 0;
+  font-size:40px;
+  margin:20px;
 }
 </style>
 </head>
@@ -81,188 +83,172 @@ nav button.active{
 
 <div id="app">
 
-<!-- HOME -->
-<div id="home" class="screen active">
-  <h1>🏠 Diego Training</h1>
-  <div class="card">Escolha o treino</div>
+<div class="header">
+  <div class="title">DIEGO TRAINING</div>
+  <div>Semana 1 • Volume Base</div>
+</div>
 
-  <div class="card" onclick="abrir('Peito')">PEITO</div>
-  <div class="card" onclick="abrir('Costas')">COSTAS</div>
-  <div class="card" onclick="abrir('Anterior')">ANTERIOR</div>
-  <div class="card" onclick="abrir('Posterior')">POSTERIOR</div>
-  <div class="card" onclick="abrir('Ombros')">OMBROS</div>
-  <div class="card" onclick="abrir('Bracos')">BÍCEPS/TRÍCEPS</div>
+<!-- DASH -->
+<div class="card">
+  <b>Peso:</b> 80.5kg<br>
+  <b>IMC:</b> 24.0<br>
+  <b>Treinos:</b> <span id="count"></span>/7
+</div>
+
+<!-- BOTÃO -->
+<div class="card">
+  <button class="btn" onclick="startTreino()">Iniciar Treino</button>
 </div>
 
 <!-- TREINO -->
-<div id="treino" class="screen">
-  <h1 id="titulo"></h1>
+<div id="treino" style="display:none">
+
+<div class="card">
+  <h2>BÍCEPS / TRÍCEPS</h2>
 
   <div id="lista"></div>
 
-  <button onclick="finalizarTreino()">Finalizar treino</button>
+  <button class="btn" onclick="finalizar()">Treino concluído</button>
+
 </div>
 
-<!-- PROGRESSO -->
-<div id="progresso" class="screen">
-  <h1>📊 Histórico</h1>
-  <div id="historico"></div>
 </div>
 
 <!-- TIMER -->
-<div id="timerScreen" class="screen">
-  <h1>⏱ Descanso</h1>
+<div class="card">
   <div class="timer" id="timer">60</div>
-  <button onclick="startTimer()">Iniciar</button>
+  <button class="btn" onclick="startTimer()">Iniciar descanso</button>
 </div>
-
-<!-- NAV -->
-<nav>
-  <button onclick="trocar('home')" class="active">Home</button>
-  <button onclick="trocar('treino')">Treino</button>
-  <button onclick="trocar('progresso')">Histórico</button>
-  <button onclick="trocar('timerScreen')">Timer</button>
-</nav>
 
 </div>
 
 <script>
 
-// BASE TREINOS (SEU)
-const treinos = {
-
-Peito:[
-"Supino declinado + cross + crucifixo",
-"Supino reto + máquina",
-"Supino 45 + crucifixo 45"
-],
-
-Costas:[
-"Barra fixa + puxada",
-"Puxada por trás + articulada",
-"Remada inclinada + unilateral"
-],
-
-Anterior:[
-"Agachamento smith",
-"Leg press",
-"Cadeira extensora",
-"Agachamento unilateral"
-],
-
-Posterior:[
-"Cadeira flexora",
-"Mesa flexora + stiff",
-"Panturrilha 5x20"
-],
-
-Ombros:[
-"Abdução + cross",
-"Desenvolvimento máquina",
-"Crucifixo inverso",
-"Encolhimento + remada alta"
-],
-
-Bracos:[
-"Rosca direta + scott",
-"Tríceps testa + pulley",
-"Rosca martelo"
-]
-
-};
+// BASE (SEU TREINO)
+const treino = [
+{
+nome:"Rosca Direta",
+obs:"Cotovelo fixo",
+series:3
+},
+{
+nome:"Rosca Scott",
+obs:"Cadência lenta",
+series:3
+},
+{
+nome:"Tríceps Pulley",
+obs:"Extensão total",
+series:3
+}
+];
 
 // ESTADO
-let treinoAtual = "";
-let feitos = JSON.parse(localStorage.getItem("feitos")||"{}");
+let data = JSON.parse(localStorage.getItem("dados")||"{}");
 
-// TROCAR TELA
-function trocar(tela){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(tela).classList.add('active');
-}
-
-// ABRIR TREINO
-function abrir(nome){
-  treinoAtual = nome;
-  document.getElementById("titulo").innerText = nome;
-  renderTreino();
-  trocar("treino");
+// START
+function startTreino(){
+  document.getElementById("treino").style.display="block";
+  render();
 }
 
 // RENDER
-function renderTreino(){
+function render(){
   const div = document.getElementById("lista");
-  div.innerHTML = "";
+  div.innerHTML="";
 
-  treinos[treinoAtual].forEach((ex,i)=>{
+  treino.forEach((ex,i)=>{
 
-    let feito = feitos[treinoAtual]?.includes(i);
+    div.innerHTML+=`
+    <div class="exercise">
+      <b>${ex.nome}</b><br>
+      <small>${ex.obs}</small>
 
-    div.innerHTML += `
-      <div class="card ${feito?"done":""}" onclick="toggle(${i})">
-        ${ex}
-      </div>
+      ${renderSeries(i,ex.series)}
+    </div>
     `;
   });
 }
 
-// MARCAR
-function toggle(i){
-  if(!feitos[treinoAtual]) feitos[treinoAtual]=[];
+// SERIES
+function renderSeries(i,total){
+  let html="";
 
-  if(feitos[treinoAtual].includes(i)){
-    feitos[treinoAtual] = feitos[treinoAtual].filter(x=>x!=i);
-  } else {
-    feitos[treinoAtual].push(i);
+  for(let s=0;s<total;s++){
+
+    let val = data[i]?.[s] || {};
+
+    html+=`
+    <div class="series">
+      <input placeholder="kg" value="${val.kg||""}" oninput="save(${i},${s},'kg',this.value)">
+      <input placeholder="rep" value="${val.rep||""}" oninput="save(${i},${s},'rep',this.value)">
+      <div class="check ${val.done?'done':''}" onclick="toggle(${i},${s})"></div>
+    </div>
+    `;
   }
 
-  localStorage.setItem("feitos", JSON.stringify(feitos));
-  renderTreino();
+  return html;
+}
+
+// SALVAR
+function save(i,s,key,val){
+  if(!data[i]) data[i]={};
+  if(!data[i][s]) data[i][s]={};
+
+  data[i][s][key]=val;
+
+  localStorage.setItem("dados",JSON.stringify(data));
+}
+
+// CHECK
+function toggle(i,s){
+  if(!data[i]) data[i]={};
+  if(!data[i][s]) data[i][s]={};
+
+  data[i][s].done = !data[i][s].done;
+
+  localStorage.setItem("dados",JSON.stringify(data));
+  render();
+
+  startTimer(); // auto descanso
 }
 
 // FINALIZAR
-function finalizarTreino(){
+function finalizar(){
   let hist = JSON.parse(localStorage.getItem("hist")||"[]");
 
   hist.push({
-    treino:treinoAtual,
     data:new Date().toLocaleString()
   });
 
-  localStorage.setItem("hist", JSON.stringify(hist));
+  localStorage.setItem("hist",JSON.stringify(hist));
 
-  alert("Treino salvo!");
+  alert("Treino salvo 🔥");
+  atualizarContador();
 }
 
-// HISTÓRICO
-function renderHistorico(){
-  const div = document.getElementById("historico");
-  const hist = JSON.parse(localStorage.getItem("hist")||"[]");
-
-  div.innerHTML="";
-
-  hist.reverse().forEach(h=>{
-    div.innerHTML += `<div class="card">${h.treino} - ${h.data}</div>`;
-  });
+// CONTADOR
+function atualizarContador(){
+  let hist = JSON.parse(localStorage.getItem("hist")||"[]");
+  document.getElementById("count").innerText = hist.length;
 }
 
 // TIMER
-let tempo=60, intervalo;
+let tempo=60, int;
 
 function startTimer(){
-  clearInterval(intervalo);
+  clearInterval(int);
   tempo=60;
 
-  intervalo=setInterval(()=>{
+  int=setInterval(()=>{
     tempo--;
     document.getElementById("timer").innerText=tempo;
-
-    if(tempo<=0) clearInterval(intervalo);
+    if(tempo<=0) clearInterval(int);
   },1000);
 }
 
 // INIT
-renderHistorico();
+atualizarContador();
 
 </script>
 
