@@ -10,7 +10,7 @@ body{
   margin:0;
   background:#080808;
   color:#fff;
-  font-family:Arial;
+  font-family:Arial, sans-serif;
 }
 
 #app{
@@ -31,6 +31,10 @@ body{
   display:block;
 }
 
+h2{
+  margin-bottom:15px;
+}
+
 nav{
   display:flex;
   border-top:1px solid #222;
@@ -42,6 +46,7 @@ nav button{
   background:#111;
   color:#777;
   border:none;
+  font-size:13px;
 }
 
 nav button.active{
@@ -54,6 +59,17 @@ nav button.active{
   border-radius:10px;
   margin-bottom:10px;
 }
+
+.btn{
+  background:#d4ff00;
+  color:#000;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  font-weight:bold;
+  width:100%;
+  margin-top:10px;
+}
 </style>
 </head>
 
@@ -61,26 +77,45 @@ nav button.active{
 
 <div id="app">
 
+<!-- DASH -->
 <div id="dash" class="screen active">
   <h2>🏠 Início</h2>
   <div class="card">
-    App funcionando ✅
+    Bem-vindo ao seu app de treino
   </div>
 </div>
 
+<!-- TREINO -->
 <div id="treino" class="screen">
-  <h2>💪 Treino</h2>
+  <h2>💪 Treino de Hoje</h2>
   <div id="lista"></div>
 </div>
 
-<div id="perfil" class="screen">
-  <h2>👤 Perfil</h2>
-  <div class="card">Diego</div>
+<!-- EVOLUÇÃO -->
+<div id="evol" class="screen">
+  <h2>📈 Evolução</h2>
+
+  <div class="card">
+    <input id="peso" placeholder="Seu peso (kg)" style="width:100%;padding:10px;border-radius:8px;border:none;margin-bottom:10px">
+    <button class="btn" onclick="salvarPeso()">Salvar</button>
+  </div>
+
+  <div id="historico"></div>
 </div>
 
+<!-- PERFIL -->
+<div id="perfil" class="screen">
+  <h2>👤 Perfil</h2>
+  <div class="card">
+    Diego • 37 anos • 1,83m
+  </div>
+</div>
+
+<!-- NAV -->
 <nav>
   <button onclick="trocar('dash')" class="active">Início</button>
   <button onclick="trocar('treino')">Treino</button>
+  <button onclick="trocar('evol')">Evolução</button>
   <button onclick="trocar('perfil')">Perfil</button>
 </nav>
 
@@ -88,12 +123,15 @@ nav button.active{
 
 <script>
 
-const treinos = [
-  {nome:"Supino", series:3},
-  {nome:"Agachamento", series:4},
-  {nome:"Rosca Bíceps", series:3}
+// TREINO
+const treinoHoje = [
+  {nome:"Supino Reto", reps:"3x10"},
+  {nome:"Agachamento", reps:"4x8"},
+  {nome:"Rosca Bíceps", reps:"3x12"},
+  {nome:"Tríceps Pulley", reps:"3x12"}
 ];
 
+// NAVEGAÇÃO
 function trocar(tela){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(tela).classList.add('active');
@@ -102,21 +140,60 @@ function trocar(tela){
   event.target.classList.add('active');
 }
 
-function renderTreinos(){
+// RENDER TREINO
+function renderTreino(){
   const div = document.getElementById("lista");
   div.innerHTML = "";
 
-  treinos.forEach(t=>{
+  treinoHoje.forEach(t=>{
     div.innerHTML += `
       <div class="card">
         <strong>${t.nome}</strong><br>
-        Séries: ${t.series}
+        ${t.reps}
       </div>
     `;
   });
 }
 
-renderTreinos();
+// PESO (LOCAL STORAGE)
+function salvarPeso(){
+  const input = document.getElementById("peso");
+  const valor = input.value;
+
+  if(!valor) return;
+
+  let dados = JSON.parse(localStorage.getItem("pesos") || "[]");
+
+  dados.push({
+    peso: valor,
+    data: new Date().toLocaleDateString()
+  });
+
+  localStorage.setItem("pesos", JSON.stringify(dados));
+
+  input.value = "";
+  renderHistorico();
+}
+
+// HISTÓRICO
+function renderHistorico(){
+  const div = document.getElementById("historico");
+  const dados = JSON.parse(localStorage.getItem("pesos") || "[]");
+
+  div.innerHTML = "";
+
+  dados.reverse().forEach(d=>{
+    div.innerHTML += `
+      <div class="card">
+        ${d.peso} kg - ${d.data}
+      </div>
+    `;
+  });
+}
+
+// INIT
+renderTreino();
+renderHistorico();
 
 </script>
 
