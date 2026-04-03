@@ -12,41 +12,73 @@
 body{margin:0;background:#050505;color:#fff;font-family:Arial}
 #app{max-width:520px;margin:auto}
 
-.title{color:#d4ff00;font-size:28px;padding:20px;font-weight:bold}
-
-.card{background:#111;margin:10px;padding:15px;border-radius:14px}
-
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-.big{font-size:22px;font-weight:bold}
-
-.chips{display:flex;gap:10px;overflow:auto;padding:10px}
-.chip{background:#222;padding:10px 14px;border-radius:20px}
-.active{background:#d4ff00;color:#000}
-
-.exercise{margin-top:15px;padding-top:10px;border-top:1px solid #222}
-
-.tag{font-size:11px;background:#222;padding:4px 8px;border-radius:6px;margin-bottom:5px}
-
-.series{display:flex;gap:8px;margin-top:6px;align-items:center}
-
-input{
-  background:#000;border:1px solid #333;border-radius:8px;
-  color:#fff;padding:6px;width:60px
+/* HEADER */
+.header{
+  padding:20px;
+}
+.title{
+  color:#d4ff00;
+  font-size:26px;
+  font-weight:bold;
 }
 
+/* NAV */
+.nav{
+  display:flex;
+  border-top:1px solid #222;
+}
+.nav button{
+  flex:1;
+  padding:10px;
+  background:#111;
+  color:#777;
+  border:none;
+}
+.nav .active{color:#d4ff00}
+
+/* CARD */
+.card{
+  background:#111;
+  margin:10px;
+  padding:15px;
+  border-radius:14px;
+}
+
+/* HOME */
+.big{font-size:22px;font-weight:bold}
+.btn{
+  background:#d4ff00;
+  color:#000;
+  padding:14px;
+  border:none;
+  border-radius:10px;
+  width:100%;
+  margin-top:10px;
+}
+
+/* TREINO */
+.exercise{margin-top:15px;border-top:1px solid #222;padding-top:10px}
+.series{display:flex;gap:6px;margin-top:6px}
+input{
+  background:#000;
+  border:1px solid #333;
+  border-radius:6px;
+  color:#fff;
+  padding:6px;
+  width:55px;
+}
 .check{
-  width:26px;height:26px;border-radius:50%;
+  width:24px;height:24px;border-radius:50%;
   border:2px solid #444;
 }
 .done{background:#00e676}
 
-.btn{
-  background:#d4ff00;color:#000;padding:14px;
-  border:none;border-radius:10px;width:100%;margin-top:15px;font-weight:bold
+/* TIMER */
+.timer{
+  font-size:40px;
+  text-align:center;
+  color:#d4ff00;
 }
-
-.small{font-size:12px;color:#aaa}
 </style>
 </head>
 
@@ -54,159 +86,138 @@ input{
 
 <div id="app">
 
-<div class="title">DIEGO TRAINING</div>
-
-<!-- DASHBOARD -->
-<div class="card grid">
-  <div><div class="small">Peso</div><div class="big">80.5kg</div></div>
-  <div><div class="small">IMC</div><div class="big">24.0</div></div>
+<div class="header">
+  <div class="title">DIEGO TRAINING</div>
 </div>
 
-<!-- GRÁFICO -->
-<div class="card">
-  <canvas id="grafico"></canvas>
+<div id="screen"></div>
+
+<div class="nav">
+  <button onclick="go('home')" id="nav-home">Home</button>
+  <button onclick="go('treino')" id="nav-treino">Treino</button>
+  <button onclick="go('evol')" id="nav-evol">Evolução</button>
 </div>
-
-<!-- MENU -->
-<div class="chips" id="chips"></div>
-
-<!-- TREINO -->
-<div id="treino"></div>
 
 </div>
 
 <script>
 
-// 📊 GRÁFICO
-new Chart(document.getElementById("grafico"),{
-  type:"line",
-  data:{
-    labels:["Dez","Fev","Mar"],
-    datasets:[{label:"Peso",data:[77.6,77.3,80.4]}]
-  }
-});
+// =====================
+// 📊 PERIODIZAÇÃO
+// =====================
+const periodizacao = [
+{sem:1,series:3,reps:"10",rest:60},
+{sem:2,series:3,reps:"8-10",rest:60},
+{sem:3,series:4,reps:"6-8",rest:75},
+{sem:4,series:2,reps:"12",rest:45}
+];
 
-// ORDEM
-const ordem = ["Peito","Costas","Anterior","Ombros","Bracos","Posterior"];
+let semana = Number(localStorage.getItem("semana")||1);
+let cfg = periodizacao.find(p=>p.sem===semana);
 
-// TREINOS (SUA FICHA)
+// =====================
+// 🏋️ TREINOS
+// =====================
 const treinos = {
-
-Peito:[
-["Supino declinado","Cross over","Crucifixo declinado"],
-["Supino reto","Supino máquina","Crucifixo máquina"],
-["Supino 45","Supino 45 máquina","Crucifixo 45"]
-],
-
-Costas:[
-["Barra fixa","Puxada hammer","Puxada frente"],
-["Puxada por trás","Puxada articulada","Puxada frente"],
-["Remada inclinada","Remada unilateral","Remada sentada"]
-],
-
-Anterior:[
-"Agachamento Smith",
-"Leg press",
-"Cadeira extensora",
-"Agachamento unilateral",
-"Cadeira adutora",
-"Abdominal lateral"
-],
-
-Ombros:[
-["Abdução lateral","Cross posterior","Abdução dobrada"],
-["Desenvolvimento máquina","Flexão ombro","Flexão cross"],
-["Desenvolvimento Smith atrás","Crucifixo inverso"],
-["Encolhimento","Remada alta","Encolhimento máquina"]
-],
-
-Bracos:[
-["Rosca direta","Rosca Scott","Rosca alternada"],
-["Tríceps testa","Tríceps pulley","Tríceps corda"],
-["Rosca martelo"]
-],
-
-Posterior:[
-"Cadeira flexora",
-"Mesa flexora",
-"Stiff",
-"Flexão joelho",
-"Afundo banco",
-"Panturrilha",
-"Abdominal infra"
-]
-
+Peito:["Supino","Cross","Crucifixo"],
+Costas:["Barra fixa","Puxada","Remada"],
+Anterior:["Agachamento","Leg press","Extensora"],
+Ombros:["Desenvolvimento","Elevação","Posterior"],
+Bracos:["Rosca","Tríceps","Martelo"],
+Posterior:["Flexora","Stiff","Panturrilha"]
 };
 
-let atual="";
+let atual="Peito";
 let dados = JSON.parse(localStorage.getItem("dados")||"{}");
-let historico = JSON.parse(localStorage.getItem("historico")||"{}");
+let hist = JSON.parse(localStorage.getItem("hist")||"{}");
 
-// INIT
-function init(){
-  let html="";
-  ordem.forEach(nome=>{
-    html+=`<div class="chip" onclick="abrir('${nome}',this)">${nome}</div>`;
-  });
-  document.getElementById("chips").innerHTML=html;
+// =====================
+// 🧭 NAVEGAÇÃO
+// =====================
+function go(tela){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("nav-"+tela).classList.add("active");
+
+  if(tela==="home") renderHome();
+  if(tela==="treino") renderTreino();
+  if(tela==="evol") renderEvol();
 }
 
-// ABRIR
-function abrir(nome,el){
-  atual=nome;
-  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
-  el.classList.add("active");
-  render();
+// =====================
+// 🏠 HOME (AGORA FORTE)
+// =====================
+function renderHome(){
+
+  document.getElementById("screen").innerHTML=`
+  <div class="card">
+    <div class="big">Semana ${semana}</div>
+    <div>${cfg.series} séries · ${cfg.reps} reps · ${cfg.rest}s</div>
+  </div>
+
+  <div class="card">
+    <div class="big">Treino de hoje</div>
+    <div>${atual}</div>
+    <button class="btn" onclick="go('treino')">Iniciar treino</button>
+  </div>
+
+  <div class="card">
+    <div class="big">Progresso</div>
+    <div>Total treinos: ${Object.keys(hist).length}</div>
+  </div>
+  `;
 }
 
-// RENDER
-function render(){
+// =====================
+// 🏋️ TREINO (GUIADO)
+// =====================
+function renderTreino(){
 
   let treino = treinos[atual];
-  if(!treino) return;
 
   let html=`<div class="card"><h2>${atual}</h2>`;
 
-  treino.forEach((item,i)=>{
+  treino.forEach((ex,i)=>{
 
-    html+=`<div class="exercise">`;
+    html+=`
+    <div class="exercise">
+      <b>${ex}</b>
 
-    if(Array.isArray(item)){
-      html+=`<div class="tag">TRI-SET</div>`;
-      item.forEach(e=>{
-        html+=`<div>${e} ${sugestao(e)}</div>`;
-      });
-    }else{
-      html+=`<div>${item} ${sugestao(item)}</div>`;
-    }
-
-    html+=renderSeries(i,3);
-
-    html+=`</div>`;
+      ${renderSeries(i)}
+    </div>
+    `;
   });
 
-  html+=`<button class="btn" onclick="finalizar()">Finalizar treino</button></div>`;
+  html+=`
+  <div class="card">
+    <div class="timer" id="timer">60</div>
+  </div>
 
-  document.getElementById("treino").innerHTML = html;
+  <button class="btn" onclick="finalizar()">Finalizar treino</button>
+  `;
+
+  document.getElementById("screen").innerHTML=html;
 }
 
-// SERIES
-function renderSeries(i,total){
+// =====================
+// 🔢 SÉRIES
+// =====================
+function renderSeries(i){
+
   let html="";
 
-  for(let s=0;s<total;s++){
+  for(let s=0;s<cfg.series;s++){
 
-    let val = dados[atual]?.[i]?.[s] || {};
+    let v = dados[atual]?.[i]?.[s] || {};
 
     html+=`
     <div class="series">
-      <input placeholder="kg" value="${val.kg||""}"
+      <input placeholder="kg" value="${v.kg||""}"
       oninput="save(${i},${s},'kg',this.value)">
-      
-      <input placeholder="rep" value="${val.rep||""}"
+
+      <input placeholder="rep" value="${v.rep||""}"
       oninput="save(${i},${s},'rep',this.value)">
-      
-      <div class="check ${val.done?'done':''}"
+
+      <div class="check ${v.done?'done':''}"
       onclick="toggle(${i},${s})"></div>
     </div>
     `;
@@ -215,18 +226,25 @@ function renderSeries(i,total){
   return html;
 }
 
-// SAVE
-function save(i,s,key,val){
+// =====================
+// 💾 SAVE
+// =====================
+function save(i,s,k,v){
   if(!dados[atual]) dados[atual]={};
   if(!dados[atual][i]) dados[atual][i]={};
   if(!dados[atual][i][s]) dados[atual][i][s]={};
 
-  dados[atual][i][s][key]=val;
+  dados[atual][i][s][k]=v;
   localStorage.setItem("dados",JSON.stringify(dados));
 }
 
-// CHECK
+// =====================
+// ✔ CHECK + TIMER
+// =====================
+let tempo=60, int;
+
 function toggle(i,s){
+
   if(!dados[atual]) dados[atual]={};
   if(!dados[atual][i]) dados[atual][i]={};
   if(!dados[atual][i][s]) dados[atual][i][s]={};
@@ -234,80 +252,57 @@ function toggle(i,s){
   dados[atual][i][s].done = !dados[atual][i][s].done;
 
   localStorage.setItem("dados",JSON.stringify(dados));
-  render();
+
+  startTimer();
+  renderTreino();
 }
 
-// PROGRESSÃO
-function registrar(nome,kg,rep){
+function startTimer(){
+  clearInterval(int);
+  tempo=cfg.rest;
 
-  if(!historico[nome]) historico[nome]=[];
+  int=setInterval(()=>{
+    tempo--;
+    document.getElementById("timer").innerText=tempo;
+    if(tempo<=0) clearInterval(int);
+  },1000);
+}
 
-  historico[nome].push({
-    kg:Number(kg),
-    rep:Number(rep)
+// =====================
+// 📊 EVOLUÇÃO (GRÁFICO SEPARADO)
+// =====================
+function renderEvol(){
+
+  document.getElementById("screen").innerHTML=`
+  <div class="card">
+    <canvas id="graf"></canvas>
+  </div>
+  `;
+
+  new Chart(document.getElementById("graf"),{
+    type:"line",
+    data:{
+      labels:["Dez","Fev","Mar"],
+      datasets:[{data:[77,78,80]}]
+    }
   });
-
-  localStorage.setItem("historico",JSON.stringify(historico));
 }
 
-// PR
-function PR(nome){
-  if(!historico[nome]) return "-";
-
-  let melhor = historico[nome].reduce((m,e)=>{
-    let carga = e.kg*(1+e.rep/30);
-    return carga>m?carga:m;
-  },0);
-
-  return Math.round(melhor);
-}
-
-// SUGESTÃO
-function sugestao(nome){
-
-  if(!historico[nome]) return "";
-
-  let ult = historico[nome].slice(-1)[0];
-  if(!ult) return "";
-
-  let carga = ult.kg;
-
-  if(ult.rep>=10) carga+=2;
-  if(ult.rep<6) carga-=2;
-
-  return `<div class="small">
-  Último: ${ult.kg}kg x ${ult.rep}  
-  → Sug: ${carga}kg  
-  PR: ${PR(nome)}
-  </div>`;
-}
-
+// =====================
 // FINALIZAR
+// =====================
 function finalizar(){
 
-  treinos[atual].forEach((item,i)=>{
+  semana++;
+  if(semana>4) semana=1;
 
-    if(Array.isArray(item)){
-      item.forEach(e=>{
-        let kg = dados[atual]?.[i]?.[0]?.kg;
-        let rep = dados[atual]?.[i]?.[0]?.rep;
+  localStorage.setItem("semana",semana);
 
-        if(kg && rep) registrar(e,kg,rep);
-      });
-    }else{
-      let kg = dados[atual]?.[i]?.[0]?.kg;
-      let rep = dados[atual]?.[i]?.[0]?.rep;
-
-      if(kg && rep) registrar(item,kg,rep);
-    }
-
-  });
-
-  alert("Treino salvo 🔥 Evolução registrada");
+  alert("Treino salvo 🔥");
 }
 
 // INIT
-init();
+go("home");
 
 </script>
 
