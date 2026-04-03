@@ -1,53 +1,270 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diego Training</title>
+<title>Diego Training PRO</title>
+
 <style>
-body { background: #080808; color: #f0f0f0; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-h1 { color: #d4ff00; font-size: 28px; margin-bottom: 8px; }
-p { color: #aaa; font-size: 14px; margin-bottom: 16px; }
-.card { background: #111; border: 1px solid #282828; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-.card h2 { color: #d4ff00; font-size: 18px; margin-bottom: 6px; }
-.card p { margin: 0; color: #aaa; font-size: 13px; }
-#status { color: #00e676; font-size: 16px; font-weight: bold; margin-bottom: 20px; }
+body{
+  margin:0;
+  background:#080808;
+  color:#fff;
+  font-family:Arial;
+}
+
+#app{
+  max-width:480px;
+  margin:auto;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.screen{
+  flex:1;
+  display:none;
+  padding:20px;
+  overflow:auto;
+}
+
+.screen.active{ display:block; }
+
+h1{ color:#d4ff00; }
+
+.card{
+  background:#111;
+  padding:15px;
+  border-radius:12px;
+  margin-bottom:10px;
+}
+
+.done{
+  opacity:0.4;
+  text-decoration:line-through;
+}
+
+button{
+  background:#d4ff00;
+  border:none;
+  padding:10px;
+  border-radius:8px;
+  font-weight:bold;
+  width:100%;
+  margin-top:10px;
+}
+
+nav{
+  display:flex;
+  border-top:1px solid #222;
+}
+
+nav button{
+  flex:1;
+  background:#111;
+  color:#777;
+}
+
+nav button.active{
+  color:#d4ff00;
+}
+
+.timer{
+  font-size:28px;
+  text-align:center;
+  margin:10px 0;
+}
 </style>
 </head>
+
 <body>
-<h1>DIEGO TRAINING</h1>
-<div id="status">Carregando...</div>
-<div class="card">
-  <h2>PEITO · Segunda</h2>
-  <p>Tri-sets · 3 séries × 10 reps</p>
+
+<div id="app">
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <h1>🏠 Diego Training</h1>
+  <div class="card">Escolha o treino</div>
+
+  <div class="card" onclick="abrir('Peito')">PEITO</div>
+  <div class="card" onclick="abrir('Costas')">COSTAS</div>
+  <div class="card" onclick="abrir('Anterior')">ANTERIOR</div>
+  <div class="card" onclick="abrir('Posterior')">POSTERIOR</div>
+  <div class="card" onclick="abrir('Ombros')">OMBROS</div>
+  <div class="card" onclick="abrir('Bracos')">BÍCEPS/TRÍCEPS</div>
 </div>
-<div class="card">
-  <h2>COSTAS · Terça</h2>
-  <p>Tri-sets · 3 séries × 10 reps</p>
+
+<!-- TREINO -->
+<div id="treino" class="screen">
+  <h1 id="titulo"></h1>
+
+  <div id="lista"></div>
+
+  <button onclick="finalizarTreino()">Finalizar treino</button>
 </div>
-<div class="card">
-  <h2>ANTERIOR · Quarta</h2>
-  <p>Quadríceps + Core</p>
+
+<!-- PROGRESSO -->
+<div id="progresso" class="screen">
+  <h1>📊 Histórico</h1>
+  <div id="historico"></div>
 </div>
-<div class="card">
-  <h2>OMBROS · Quinta</h2>
-  <p>Tri-sets · 3 séries × 10 reps</p>
+
+<!-- TIMER -->
+<div id="timerScreen" class="screen">
+  <h1>⏱ Descanso</h1>
+  <div class="timer" id="timer">60</div>
+  <button onclick="startTimer()">Iniciar</button>
 </div>
-<div class="card">
-  <h2>BÍC/TRIC · Sexta</h2>
-  <p>Bíceps e Tríceps</p>
+
+<!-- NAV -->
+<nav>
+  <button onclick="trocar('home')" class="active">Home</button>
+  <button onclick="trocar('treino')">Treino</button>
+  <button onclick="trocar('progresso')">Histórico</button>
+  <button onclick="trocar('timerScreen')">Timer</button>
+</nav>
+
 </div>
-<div class="card">
-  <h2>POSTERIOR · Sábado</h2>
-  <p>Isquiotibiais + Panturrilha</p>
-</div>
-<div class="card">
-  <h2>CARDIO · Domingo</h2>
-  <p>Cardio + Abdome</p>
-</div>
+
 <script>
-document.getElementById('status').textContent = 'JavaScript funcionando!';
+
+// BASE TREINOS (SEU)
+const treinos = {
+
+Peito:[
+"Supino declinado + cross + crucifixo",
+"Supino reto + máquina",
+"Supino 45 + crucifixo 45"
+],
+
+Costas:[
+"Barra fixa + puxada",
+"Puxada por trás + articulada",
+"Remada inclinada + unilateral"
+],
+
+Anterior:[
+"Agachamento smith",
+"Leg press",
+"Cadeira extensora",
+"Agachamento unilateral"
+],
+
+Posterior:[
+"Cadeira flexora",
+"Mesa flexora + stiff",
+"Panturrilha 5x20"
+],
+
+Ombros:[
+"Abdução + cross",
+"Desenvolvimento máquina",
+"Crucifixo inverso",
+"Encolhimento + remada alta"
+],
+
+Bracos:[
+"Rosca direta + scott",
+"Tríceps testa + pulley",
+"Rosca martelo"
+]
+
+};
+
+// ESTADO
+let treinoAtual = "";
+let feitos = JSON.parse(localStorage.getItem("feitos")||"{}");
+
+// TROCAR TELA
+function trocar(tela){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(tela).classList.add('active');
+}
+
+// ABRIR TREINO
+function abrir(nome){
+  treinoAtual = nome;
+  document.getElementById("titulo").innerText = nome;
+  renderTreino();
+  trocar("treino");
+}
+
+// RENDER
+function renderTreino(){
+  const div = document.getElementById("lista");
+  div.innerHTML = "";
+
+  treinos[treinoAtual].forEach((ex,i)=>{
+
+    let feito = feitos[treinoAtual]?.includes(i);
+
+    div.innerHTML += `
+      <div class="card ${feito?"done":""}" onclick="toggle(${i})">
+        ${ex}
+      </div>
+    `;
+  });
+}
+
+// MARCAR
+function toggle(i){
+  if(!feitos[treinoAtual]) feitos[treinoAtual]=[];
+
+  if(feitos[treinoAtual].includes(i)){
+    feitos[treinoAtual] = feitos[treinoAtual].filter(x=>x!=i);
+  } else {
+    feitos[treinoAtual].push(i);
+  }
+
+  localStorage.setItem("feitos", JSON.stringify(feitos));
+  renderTreino();
+}
+
+// FINALIZAR
+function finalizarTreino(){
+  let hist = JSON.parse(localStorage.getItem("hist")||"[]");
+
+  hist.push({
+    treino:treinoAtual,
+    data:new Date().toLocaleString()
+  });
+
+  localStorage.setItem("hist", JSON.stringify(hist));
+
+  alert("Treino salvo!");
+}
+
+// HISTÓRICO
+function renderHistorico(){
+  const div = document.getElementById("historico");
+  const hist = JSON.parse(localStorage.getItem("hist")||"[]");
+
+  div.innerHTML="";
+
+  hist.reverse().forEach(h=>{
+    div.innerHTML += `<div class="card">${h.treino} - ${h.data}</div>`;
+  });
+}
+
+// TIMER
+let tempo=60, intervalo;
+
+function startTimer(){
+  clearInterval(intervalo);
+  tempo=60;
+
+  intervalo=setInterval(()=>{
+    tempo--;
+    document.getElementById("timer").innerText=tempo;
+
+    if(tempo<=0) clearInterval(intervalo);
+  },1000);
+}
+
+// INIT
+renderHistorico();
+
 </script>
+
 </body>
 </html>
