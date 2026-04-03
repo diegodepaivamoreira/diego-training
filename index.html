@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Diego Training</title>
+
 <style>
 body{
   margin:0;
@@ -55,28 +56,36 @@ nav button.active{
 }
 </style>
 </head>
+
 <body>
+
 <div id="app">
+
 <div id="dash" class="screen active">
   <h2>🏠 Início</h2>
   <div class="card">
     App funcionando ✅
   </div>
 </div>
+
 <div id="treino" class="screen">
   <h2>💪 Treino</h2>
   <div id="lista"></div>
 </div>
+
 <div id="perfil" class="screen">
   <h2>👤 Perfil</h2>
   <div class="card">Diego</div>
 </div>
+
 <nav>
   <button onclick="trocar('dash')" class="active">Início</button>
   <button onclick="trocar('treino')">Treino</button>
   <button onclick="trocar('perfil')">Perfil</button>
 </nav>
+
 </div>
+
 <script>
 
 const treinos = [
@@ -110,6 +119,6 @@ function renderTreinos(){
 renderTreinos();
 
 </script>
+
 </body>
 </html>
-:::
