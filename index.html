@@ -1,17 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-        body {
-            background-color: #ffffff; /* Update to a color that works in Safari */
-            color: #000000;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Diego Training</title>
+<style>
+body{
+  margin:0;
+  background:#080808;
+  color:#fff;
+  font-family:Arial;
+}
+
+#app{
+  max-width:480px;
+  margin:auto;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+}
+
+.screen{
+  flex:1;
+  display:none;
+  padding:20px;
+}
+
+.screen.active{
+  display:block;
+}
+
+nav{
+  display:flex;
+  border-top:1px solid #222;
+}
+
+nav button{
+  flex:1;
+  padding:12px;
+  background:#111;
+  color:#777;
+  border:none;
+}
+
+nav button.active{
+  color:#d4ff00;
+}
+
+.card{
+  background:#111;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+</style>
 </head>
 <body>
-    <h1>Welcome to Diego's Training</h1>
+<div id="app">
+<div id="dash" class="screen active">
+  <h2>🏠 Início</h2>
+  <div class="card">
+    App funcionando ✅
+  </div>
+</div>
+<div id="treino" class="screen">
+  <h2>💪 Treino</h2>
+  <div id="lista"></div>
+</div>
+<div id="perfil" class="screen">
+  <h2>👤 Perfil</h2>
+  <div class="card">Diego</div>
+</div>
+<nav>
+  <button onclick="trocar('dash')" class="active">Início</button>
+  <button onclick="trocar('treino')">Treino</button>
+  <button onclick="trocar('perfil')">Perfil</button>
+</nav>
+</div>
+<script>
+
+const treinos = [
+  {nome:"Supino", series:3},
+  {nome:"Agachamento", series:4},
+  {nome:"Rosca Bíceps", series:3}
+];
+
+function trocar(tela){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(tela).classList.add('active');
+
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function renderTreinos(){
+  const div = document.getElementById("lista");
+  div.innerHTML = "";
+
+  treinos.forEach(t=>{
+    div.innerHTML += `
+      <div class="card">
+        <strong>${t.nome}</strong><br>
+        Séries: ${t.series}
+      </div>
+    `;
+  });
+}
+
+renderTreinos();
+
+</script>
 </body>
 </html>
+:::
