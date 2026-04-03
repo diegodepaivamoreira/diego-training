@@ -3,31 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <title>Diego Training PRO</title>
 
 <style>
 body{margin:0;background:#050505;color:#fff;font-family:Arial}
-#app{max-width:500px;margin:auto}
+#app{max-width:520px;margin:auto}
 
 .title{color:#d4ff00;font-size:28px;padding:20px;font-weight:bold}
 
-.chips{display:flex;gap:10px;overflow:auto;padding:0 10px}
+.card{background:#111;margin:10px;padding:15px;border-radius:14px}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.big{font-size:22px;font-weight:bold}
+
+.chips{display:flex;gap:10px;overflow:auto;padding:10px}
 .chip{background:#222;padding:10px 14px;border-radius:20px}
 .active{background:#d4ff00;color:#000}
 
-.card{background:#111;margin:10px;padding:15px;border-radius:14px}
+.exercise{margin-top:15px;padding-top:10px;border-top:1px solid #222}
 
-.exercise{margin-top:15px}
-.tag{font-size:11px;background:#222;padding:4px 8px;border-radius:6px;margin-bottom:5px;display:inline-block}
+.tag{font-size:11px;background:#222;padding:4px 8px;border-radius:6px;margin-bottom:5px}
 
 .series{display:flex;gap:8px;margin-top:6px;align-items:center}
 
 input{
   background:#000;border:1px solid #333;border-radius:8px;
-  color:#fff;padding:6px;width:55px
+  color:#fff;padding:6px;width:60px
 }
-
-.slabel{font-size:12px;color:#aaa;width:25px}
 
 .check{
   width:26px;height:26px;border-radius:50%;
@@ -40,12 +46,6 @@ input{
   border:none;border-radius:10px;width:100%;margin-top:15px;font-weight:bold
 }
 
-.timer{
-  font-size:50px;
-  text-align:center;
-  color:#d4ff00;
-}
-
 .small{font-size:12px;color:#aaa}
 </style>
 </head>
@@ -56,107 +56,133 @@ input{
 
 <div class="title">DIEGO TRAINING</div>
 
+<!-- DASHBOARD -->
+<div class="card grid">
+  <div><div class="small">Peso</div><div class="big">80.5kg</div></div>
+  <div><div class="small">IMC</div><div class="big">24.0</div></div>
+</div>
+
+<!-- GRÁFICO -->
+<div class="card">
+  <canvas id="grafico"></canvas>
+</div>
+
+<!-- MENU -->
 <div class="chips" id="chips"></div>
 
-<div class="card">
-  <b>Peso:</b> 80.5kg<br>
-  <b>IMC:</b> 24.0<br>
-  <b>Treinos:</b> <span id="count">0</span>
-</div>
-
+<!-- TREINO -->
 <div id="treino"></div>
-
-<div class="card">
-  <div class="timer" id="timer">60</div>
-</div>
 
 </div>
 
 <script>
 
-// TREINOS COMPLETOS
+// 📊 GRÁFICO
+new Chart(document.getElementById("grafico"),{
+  type:"line",
+  data:{
+    labels:["Dez","Fev","Mar"],
+    datasets:[{label:"Peso",data:[77.6,77.3,80.4]}]
+  }
+});
+
+// ORDEM
+const ordem = ["Peito","Costas","Anterior","Ombros","Bracos","Posterior"];
+
+// TREINOS (SUA FICHA)
 const treinos = {
 
 Peito:[
-{tipo:"TRI-SET",exercicios:["Supino declinado","Cross over","Crucifixo declinado"],series:3},
-{tipo:"TRI-SET",exercicios:["Supino reto","Supino máquina","Crucifixo máquina"],series:3},
-{tipo:"TRI-SET",exercicios:["Supino 45","Supino 45 máquina","Crucifixo 45"],series:3}
+["Supino declinado","Cross over","Crucifixo declinado"],
+["Supino reto","Supino máquina","Crucifixo máquina"],
+["Supino 45","Supino 45 máquina","Crucifixo 45"]
 ],
 
 Costas:[
-{tipo:"TRI-SET",exercicios:["Barra fixa","Puxada hammer","Puxada frente"],series:3},
-{tipo:"TRI-SET",exercicios:["Puxada por trás","Puxada articulada","Puxada frente"],series:3},
-{tipo:"TRI-SET",exercicios:["Remada inclinada","Remada unilateral","Remada sentada"],series:3}
-],
-
-Ombros:[
-{tipo:"TRI-SET",exercicios:["Abdução","Cross posterior","Abdução cotovelo"],series:3},
-{tipo:"TRI-SET",exercicios:["Desenvolvimento máquina","Elevação frontal","Cross frontal"],series:3},
-{tipo:"BI-SET",exercicios:["Desenvolvimento smith","Crucifixo inverso"],series:3},
-{tipo:"TRI-SET",exercicios:["Encolhimento","Remada alta","Encolhimento máquina"],series:3}
-],
-
-Bracos:[
-{tipo:"TRI-SET",exercicios:["Rosca direta","Rosca Scott","Rosca alternada"],series:3},
-{tipo:"TRI-SET",exercicios:["Tríceps testa","Tríceps pulley","Tríceps corda"],series:3},
-{tipo:"ISOLADO",exercicios:["Rosca martelo"],series:3}
+["Barra fixa","Puxada hammer","Puxada frente"],
+["Puxada por trás","Puxada articulada","Puxada frente"],
+["Remada inclinada","Remada unilateral","Remada sentada"]
 ],
 
 Anterior:[
-{tipo:"SEQUÊNCIA",exercicios:["Agachamento","Leg press","Extensora","Adutora"],series:3}
+"Agachamento Smith",
+"Leg press",
+"Cadeira extensora",
+"Agachamento unilateral",
+"Cadeira adutora",
+"Abdominal lateral"
+],
+
+Ombros:[
+["Abdução lateral","Cross posterior","Abdução dobrada"],
+["Desenvolvimento máquina","Flexão ombro","Flexão cross"],
+["Desenvolvimento Smith atrás","Crucifixo inverso"],
+["Encolhimento","Remada alta","Encolhimento máquina"]
+],
+
+Bracos:[
+["Rosca direta","Rosca Scott","Rosca alternada"],
+["Tríceps testa","Tríceps pulley","Tríceps corda"],
+["Rosca martelo"]
 ],
 
 Posterior:[
-{tipo:"SEQUÊNCIA",exercicios:["Flexora","Stiff","Panturrilha"],series:4}
+"Cadeira flexora",
+"Mesa flexora",
+"Stiff",
+"Flexão joelho",
+"Afundo banco",
+"Panturrilha",
+"Abdominal infra"
 ]
 
 };
 
 let atual="";
 let dados = JSON.parse(localStorage.getItem("dados")||"{}");
+let historico = JSON.parse(localStorage.getItem("historico")||"{}");
 
-// CHIPS
+// INIT
 function init(){
   let html="";
-  Object.keys(treinos).forEach(nome=>{
+  ordem.forEach(nome=>{
     html+=`<div class="chip" onclick="abrir('${nome}',this)">${nome}</div>`;
   });
   document.getElementById("chips").innerHTML=html;
-  atualizarContador();
 }
 
+// ABRIR
 function abrir(nome,el){
   atual=nome;
-
   document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
   el.classList.add("active");
-
   render();
 }
 
 // RENDER
 function render(){
+
   let treino = treinos[atual];
   if(!treino) return;
 
   let html=`<div class="card"><h2>${atual}</h2>`;
 
-  treino.forEach((bloco,b)=>{
+  treino.forEach((item,i)=>{
 
-    html+=`
-    <div class="exercise">
-      <div class="tag">${bloco.tipo}</div>
+    html+=`<div class="exercise">`;
 
-      ${bloco.exercicios.map(e=>`
-        <div>
-          ${e}
-          ${sugestao(e)}
-        </div>
-      `).join("")}
+    if(Array.isArray(item)){
+      html+=`<div class="tag">TRI-SET</div>`;
+      item.forEach(e=>{
+        html+=`<div>${e} ${sugestao(e)}</div>`;
+      });
+    }else{
+      html+=`<div>${item} ${sugestao(item)}</div>`;
+    }
 
-      ${renderSeries(b,bloco.series)}
-    </div>
-    `;
+    html+=renderSeries(i,3);
+
+    html+=`</div>`;
   });
 
   html+=`<button class="btn" onclick="finalizar()">Finalizar treino</button></div>`;
@@ -164,38 +190,24 @@ function render(){
   document.getElementById("treino").innerHTML = html;
 }
 
-// SUGESTÃO DE CARGA
-function sugestao(nome){
-  let hist = JSON.parse(localStorage.getItem("cargas")||"{}");
-
-  if(hist[nome]){
-    return `<div class="small">Sugestão: ${hist[nome]+2}kg</div>`;
-  }
-
-  return "";
-}
-
 // SERIES
-function renderSeries(b,total){
-
+function renderSeries(i,total){
   let html="";
 
   for(let s=0;s<total;s++){
 
-    let val = dados[atual]?.[b]?.[s] || {};
+    let val = dados[atual]?.[i]?.[s] || {};
 
     html+=`
     <div class="series">
-      <div class="slabel">S${s+1}</div>
-
       <input placeholder="kg" value="${val.kg||""}"
-      oninput="save(${b},${s},'kg',this.value)">
-
+      oninput="save(${i},${s},'kg',this.value)">
+      
       <input placeholder="rep" value="${val.rep||""}"
-      oninput="save(${b},${s},'rep',this.value)">
-
+      oninput="save(${i},${s},'rep',this.value)">
+      
       <div class="check ${val.done?'done':''}"
-      onclick="toggle(${b},${s})"></div>
+      onclick="toggle(${i},${s})"></div>
     </div>
     `;
   }
@@ -204,77 +216,94 @@ function renderSeries(b,total){
 }
 
 // SAVE
-function save(b,s,key,val){
+function save(i,s,key,val){
   if(!dados[atual]) dados[atual]={};
-  if(!dados[atual][b]) dados[atual][b]={};
-  if(!dados[atual][b][s]) dados[atual][b][s]={};
+  if(!dados[atual][i]) dados[atual][i]={};
+  if(!dados[atual][i][s]) dados[atual][i][s]={};
 
-  dados[atual][b][s][key]=val;
-
+  dados[atual][i][s][key]=val;
   localStorage.setItem("dados",JSON.stringify(dados));
 }
 
-// CHECK + TIMER
-function toggle(b,s){
-
+// CHECK
+function toggle(i,s){
   if(!dados[atual]) dados[atual]={};
-  if(!dados[atual][b]) dados[atual][b]={};
-  if(!dados[atual][b][s]) dados[atual][b][s]={};
+  if(!dados[atual][i]) dados[atual][i]={};
+  if(!dados[atual][i][s]) dados[atual][i][s]={};
 
-  dados[atual][b][s].done = !dados[atual][b][s].done;
+  dados[atual][i][s].done = !dados[atual][i][s].done;
 
   localStorage.setItem("dados",JSON.stringify(dados));
-
-  startTimer();
   render();
+}
+
+// PROGRESSÃO
+function registrar(nome,kg,rep){
+
+  if(!historico[nome]) historico[nome]=[];
+
+  historico[nome].push({
+    kg:Number(kg),
+    rep:Number(rep)
+  });
+
+  localStorage.setItem("historico",JSON.stringify(historico));
+}
+
+// PR
+function PR(nome){
+  if(!historico[nome]) return "-";
+
+  let melhor = historico[nome].reduce((m,e)=>{
+    let carga = e.kg*(1+e.rep/30);
+    return carga>m?carga:m;
+  },0);
+
+  return Math.round(melhor);
+}
+
+// SUGESTÃO
+function sugestao(nome){
+
+  if(!historico[nome]) return "";
+
+  let ult = historico[nome].slice(-1)[0];
+  if(!ult) return "";
+
+  let carga = ult.kg;
+
+  if(ult.rep>=10) carga+=2;
+  if(ult.rep<6) carga-=2;
+
+  return `<div class="small">
+  Último: ${ult.kg}kg x ${ult.rep}  
+  → Sug: ${carga}kg  
+  PR: ${PR(nome)}
+  </div>`;
 }
 
 // FINALIZAR
 function finalizar(){
 
-  salvarCargas();
+  treinos[atual].forEach((item,i)=>{
 
-  let hist = JSON.parse(localStorage.getItem("hist")||"[]");
-  hist.push({treino:atual,data:new Date().toLocaleString()});
-  localStorage.setItem("hist",JSON.stringify(hist));
+    if(Array.isArray(item)){
+      item.forEach(e=>{
+        let kg = dados[atual]?.[i]?.[0]?.kg;
+        let rep = dados[atual]?.[i]?.[0]?.rep;
 
-  atualizarContador();
+        if(kg && rep) registrar(e,kg,rep);
+      });
+    }else{
+      let kg = dados[atual]?.[i]?.[0]?.kg;
+      let rep = dados[atual]?.[i]?.[0]?.rep;
 
-  alert("Treino salvo 🔥");
-}
+      if(kg && rep) registrar(item,kg,rep);
+    }
 
-// SALVAR CARGAS
-function salvarCargas(){
-  let cargas = JSON.parse(localStorage.getItem("cargas")||"{}");
-
-  treinos[atual].forEach((bloco,b)=>{
-    bloco.exercicios.forEach(nome=>{
-      let kg = dados[atual]?.[b]?.[0]?.kg;
-      if(kg) cargas[nome]=Number(kg);
-    });
   });
 
-  localStorage.setItem("cargas",JSON.stringify(cargas));
-}
-
-// CONTADOR
-function atualizarContador(){
-  let hist = JSON.parse(localStorage.getItem("hist")||"[]");
-  document.getElementById("count").innerText = hist.length;
-}
-
-// TIMER
-let tempo=60, int;
-
-function startTimer(){
-  clearInterval(int);
-  tempo=60;
-
-  int=setInterval(()=>{
-    tempo--;
-    document.getElementById("timer").innerText=tempo;
-    if(tempo<=0) clearInterval(int);
-  },1000);
+  alert("Treino salvo 🔥 Evolução registrada");
 }
 
 // INIT
