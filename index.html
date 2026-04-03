@@ -1,200 +1,635 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#080808"/>
 <title>Diego Training</title>
-
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-body{
-  margin:0;
-  background:#080808;
-  color:#fff;
-  font-family:Arial, sans-serif;
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#080808;color:#f0f0f0;font-family:'DM Sans',sans-serif;height:100dvh;overflow:hidden;display:flex;flex-direction:column;max-width:480px;margin:0 auto;}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
+input,textarea,select,button{font-family:'DM Sans',sans-serif;}
+:root{
+  --acc:#d4ff00;--green:#00e676;--red:#ff4500;--cyan:#00e5ff;
+  --bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;
+  --border:#282828;--text:#f0f0f0;--text2:#aaa;--text3:#555;
 }
-
-#app{
-  max-width:480px;
-  margin:auto;
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-}
-
-.screen{
-  flex:1;
-  display:none;
-  padding:20px;
-}
-
-.screen.active{
-  display:block;
-}
-
-h2{
-  margin-bottom:15px;
-}
-
-nav{
-  display:flex;
-  border-top:1px solid #222;
-}
-
-nav button{
-  flex:1;
-  padding:12px;
-  background:#111;
-  color:#777;
-  border:none;
-  font-size:13px;
-}
-
-nav button.active{
-  color:#d4ff00;
-}
-
-.card{
-  background:#111;
-  padding:15px;
-  border-radius:10px;
-  margin-bottom:10px;
-}
-
-.btn{
-  background:#d4ff00;
-  color:#000;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  font-weight:bold;
-  width:100%;
-  margin-top:10px;
-}
+#app{display:flex;flex-direction:column;height:100dvh;position:relative;overflow:hidden;}
+.screen{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.scroll{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;}
+nav{display:flex;background:var(--s1);border-top:1px solid var(--border);flex-shrink:0;}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:none;background:none;color:var(--text3);cursor:pointer;font-size:10px;font-weight:500;}
+nav button.active{color:var(--acc);}
+nav svg{width:20px;height:20px;}
+.bebas{font-family:'Bebas Neue',cursive;}
+.btn-acc{background:var(--acc);color:#000;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;width:100%;}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;}
+.label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:600;}
+/* timer overlay */
+#timer-overlay{position:absolute;inset:0;background:rgba(0,0,0,.94);backdrop-filter:blur(10px);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
+#timer-overlay.visible{display:flex;}
+/* toast */
+#toast{position:absolute;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:9px 20px;border-radius:20px;font-weight:700;font-size:13px;z-index:300;display:none;white-space:nowrap;}
 </style>
 </head>
-
 <body>
-
 <div id="app">
+  <div id="screen-dash" class="screen"></div>
+  <div id="screen-treino" class="screen" style="display:none"></div>
+  <div id="screen-period" class="screen" style="display:none"></div>
+  <div id="screen-evol" class="screen" style="display:none"></div>
+  <div id="screen-profile" class="screen" style="display:none"></div>
 
-<!-- DASH -->
-<div id="dash" class="screen active">
-  <h2>🏠 Início</h2>
-  <div class="card">
-    Bem-vindo ao seu app de treino
+  <nav>
+    <button class="active" onclick="goTab('dash')" id="nav-dash">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Início
+    </button>
+    <button onclick="goTab('treino')" id="nav-treino">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4"/></svg>Treino
+    </button>
+    <button onclick="goTab('period')" id="nav-period">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Ciclo
+    </button>
+    <button onclick="goTab('evol')" id="nav-evol">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evolução
+    </button>
+    <button onclick="goTab('profile')" id="nav-profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Perfil
+    </button>
+  </nav>
+
+  <div id="timer-overlay">
+    <div class="label" style="margin-bottom:16px">Descanso</div>
+    <div style="position:relative;width:190px;height:190px;margin-bottom:18px">
+      <svg width="190" height="190" viewBox="0 0 190 190" style="transform:rotate(-90deg)">
+        <circle cx="95" cy="95" r="83" fill="none" stroke="var(--s3)" stroke-width="8"/>
+        <circle id="timer-arc" cx="95" cy="95" r="83" fill="none" stroke="var(--acc)" stroke-width="8" stroke-linecap="round" stroke-dasharray="521" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear,stroke .3s"/>
+      </svg>
+      <div id="timer-num" class="bebas" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:68px;letter-spacing:4px;line-height:1"></div>
+    </div>
+    <div id="timer-go" class="bebas" style="font-size:26px;letter-spacing:4px;color:var(--acc);min-height:32px;margin-bottom:6px"></div>
+    <div id="timer-next" style="font-size:12px;color:var(--text3);text-align:center;max-width:240px;line-height:1.4;min-height:36px;padding:0 20px"></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+      <button onclick="timerAdj(-15)" style="background:var(--s2);color:var(--text3);border:1px solid var(--border);border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer">−</button>
+      <span id="timer-tot-lbl" style="font-size:12px;color:var(--text3);min-width:56px;text-align:center;font-weight:600"></span>
+      <button onclick="timerAdj(15)" style="background:var(--s2);color:var(--text3);border:1px solid var(--border);border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer">+</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="closeTimer()" style="background:var(--s2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:11px 26px;font-size:14px;font-weight:600;cursor:pointer">Pular ▶</button>
+      <button onclick="closeTimer()" style="background:none;color:var(--text3);border:1px solid var(--border);border-radius:12px;padding:11px 26px;font-size:14px;cursor:pointer">Cancelar</button>
+    </div>
   </div>
-</div>
-
-<!-- TREINO -->
-<div id="treino" class="screen">
-  <h2>💪 Treino de Hoje</h2>
-  <div id="lista"></div>
-</div>
-
-<!-- EVOLUÇÃO -->
-<div id="evol" class="screen">
-  <h2>📈 Evolução</h2>
-
-  <div class="card">
-    <input id="peso" placeholder="Seu peso (kg)" style="width:100%;padding:10px;border-radius:8px;border:none;margin-bottom:10px">
-    <button class="btn" onclick="salvarPeso()">Salvar</button>
-  </div>
-
-  <div id="historico"></div>
-</div>
-
-<!-- PERFIL -->
-<div id="perfil" class="screen">
-  <h2>👤 Perfil</h2>
-  <div class="card">
-    Diego • 37 anos • 1,83m
-  </div>
-</div>
-
-<!-- NAV -->
-<nav>
-  <button onclick="trocar('dash')" class="active">Início</button>
-  <button onclick="trocar('treino')">Treino</button>
-  <button onclick="trocar('evol')">Evolução</button>
-  <button onclick="trocar('perfil')">Perfil</button>
-</nav>
-
+  <div id="toast"></div>
 </div>
 
 <script>
-
-// TREINO
-const treinoHoje = [
-  {nome:"Supino Reto", reps:"3x10"},
-  {nome:"Agachamento", reps:"4x8"},
-  {nome:"Rosca Bíceps", reps:"3x12"},
-  {nome:"Tríceps Pulley", reps:"3x12"}
+// ── DATA ──
+const WC=[
+  {num:1,name:"Volume Base",desc:"Volume total e conexão neuromuscular. Carga moderada-alta, execução impecável.",series:3,reps:"10",rest:60,drop:false},
+  {num:2,name:"Sobrecarga Progressiva",desc:"Carga 10-15% maior. Menos reps, mais intensidade. Recrutamento máximo.",series:4,reps:"8",rest:75,drop:false},
+  {num:3,name:"Choque Metabólico",desc:"Rep range alto, descanso curto, drop-set na última série de cada tri-set.",series:3,reps:"12-15",rest:45,drop:true},
+  {num:4,name:"Deload Ativo",desc:"Volume e carga reduzidos. Foco em execução, amplitude e recuperação tecidual.",series:2,reps:"10",rest:60,drop:false},
 ];
 
-// NAVEGAÇÃO
-function trocar(tela){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(tela).classList.add('active');
+const DAYS=[
+  {id:"peito",label:"PEITO",short:"Pei",wd:"Seg",sub:"Peitoral · Tri-sets",trisets:[
+    {label:"Tri-set 1",ex:[
+      {n:"Supino Declinado HBL",t:"Cotovelos 45° do tronco. Desça até sentir o peitoral inferior abrir."},
+      {n:"Cross Over",t:"Adução completa, cruzando levemente na frente. Tensão constante."},
+      {n:"Crucifixo Declinado HBC",t:"Leve flexão de cotovelo fixa durante todo o movimento."},
+    ]},
+    {label:"Tri-set 2",ex:[
+      {n:"Supino Reto HBL",t:"Barra desce até 1cm do esterno. Arco controlado."},
+      {n:"Supino Reto HBC",t:"Rotação supinada no topo para máximo pico."},
+      {n:"Crucifixo Máquina",t:"Tensão constante durante toda a amplitude."},
+    ]},
+    {label:"Tri-set 3",ex:[
+      {n:"Supino 45° HBL",t:"Enfatiza porção clavicular. Cotovelos ligeiramente fechados."},
+      {n:"Supino 45° HBC",t:"Amplitude máxima. Sinta o peitoral superior na descida."},
+      {n:"Crucifixo 45° HBC",t:"Não deixe os halteres se tocarem no topo."},
+    ]},
+  ]},
+  {id:"costas",label:"COSTAS",short:"Cos",wd:"Ter",sub:"Costas · Tri-sets",trisets:[
+    {label:"Tri-set 1",ex:[
+      {n:"Barra Fixa pela Frente",t:"Pegada pronada, mais larga que o ombro. Cotovelo aponta para o chão."},
+      {n:"Puxada Rammer",t:"Neutro ou supinado. Enfatiza dorsal inferior e bíceps."},
+      {n:"Puxada pela Frente PP",t:"Pegada paralela. Feche as escápulas no final."},
+    ]},
+    {label:"Tri-set 2",ex:[
+      {n:"Puxada por Trás",t:"Pescoço neutro. Barra desce até a nuca. Escápulas retraídas."},
+      {n:"Puxada Articulada",t:"Maior rotação escapular. Ótima para espessura."},
+      {n:"Puxada pela Frente PP",t:"Finaliza com pump máximo em polia leve."},
+    ]},
+    {label:"Tri-set 3",ex:[
+      {n:"Remada Inclinada PP",t:"45°. Cotovelo próximo ao corpo, puxe para o quadril."},
+      {n:"Remada Unilateral HBC",t:"Apoia o joelho. Puxe cotovelo para cima e trás."},
+      {n:"Remada Sentada PN",t:"Polia baixa, pegada neutra. Tronco levemente reclinado no topo."},
+    ]},
+  ]},
+  {id:"anterior",label:"ANTERIOR",short:"Ant",wd:"Qua",sub:"Quadríceps · Adutora · Core",trisets:[
+    {label:"Série · Quadríceps",single:true,ex:[
+      {n:"Agachamento no Smith",t:"Pés à frente. Desce até 90°. Joelho alinhado com o pé."},
+      {n:"Leg Press 45",t:"Larga e alta para glúteo. Estreita e baixa para quad isolado."},
+      {n:"Leg Houst",t:"Maior amplitude de joelho. Excelente para VMO."},
+      {n:"Cadeira Extensora",t:"Cadência lenta na descida (3s). Pausa 1s no topo."},
+      {n:"Agachamento Unilateral no Smith",t:"Avança o pé. Isola quad e glúteo unilateralmente."},
+      {n:"Cadeira Adutora",t:"Controle a volta. Pressão constante dos 10° aos 90°."},
+    ]},
+    {label:"Core",single:true,ex:[
+      {n:"Abdominal Lateral na Prancha",t:"Quadril neutro. 30-45s por lado."},
+    ]},
+  ]},
+  {id:"ombros",label:"OMBROS",short:"Omb",wd:"Qui",sub:"Ombros · Tri-sets",trisets:[
+    {label:"Tri-set 1 · Lateral",ex:[
+      {n:"Abdução de Ombro Sentado HBC",t:"Polegar levemente para baixo. Até 90°, não ultrapasse."},
+      {n:"Abdução por Trás no Cross Unilateral",t:"Polia baixa passando atrás. Isola cabeça lateral."},
+      {n:"Abdução (cotovelos dobrados) HBC",t:"Cotovelo a 90°. Movimento mais curto e concentrado."},
+    ]},
+    {label:"Tri-set 2 · Frontal",ex:[
+      {n:"Desenvolvimento Máquina",t:"Cadência 2-1-2. Não trave o cotovelo no topo."},
+      {n:"Flexão de Ombro HBC PN",t:"Braço reto, até a linha dos olhos. Controla a descida."},
+      {n:"Flexão de Ombro no Cross PP",t:"Polia baixa. Contração máxima no topo com pausa de 1s."},
+    ]},
+    {label:"Tri-set 3 · Posterior",ex:[
+      {n:"Desenvolvimento por Trás no Smith",t:"Barra desce até as orelhas. Pescoço neutro."},
+      {n:"Crucifixo Inverso Máquina",t:"Peito no apoio. Braços até paralelo ao solo."},
+    ]},
+    {label:"Tri-set 4 · Trapézio",ex:[
+      {n:"Encolhimento de Ombro HBC",t:"Sobe direto, sem rotação. Segura 1s no topo."},
+      {n:"Remada Alta no Cross",t:"Pegada fechada, puxe até o queixo. Cotovelos acima dos ombros."},
+      {n:"Encolhimento de Ombro HBM",t:"Haltere permite amplitude maior."},
+    ]},
+  ]},
+  {id:"biceps",label:"BÍC/TRIC",short:"BT",wd:"Sex",sub:"Bíceps e Tríceps",trisets:[
+    {label:"Tri-set Bíceps",ex:[
+      {n:"Rosca Direta HBM",t:"Supinação completa. Cotovelo fixo. Não jogue o tronco."},
+      {n:"Rosca Scott Máquina",t:"Isola o bíceps. Cadência lenta. Não trave no topo."},
+      {n:"Rosca Alternada HBC",t:"Rotação do punho na subida. Plena amplitude."},
+    ]},
+    {label:"Tri-set Tríceps",ex:[
+      {n:"Tríceps na Testa HBW",t:"Barra desce até testa. Cotovelos fixos apontados para cima."},
+      {n:"Tríceps no Pulley PP",t:"Cotovelo fixo ao lado. Extensão completa no final."},
+      {n:"Tríceps no Cross c/ Corda",t:"Separa a corda no final para máxima contração das 3 cabeças."},
+    ]},
+    {label:"Isolado",single:true,ex:[
+      {n:"Rosca Punho Martelo",t:"Trabalha braquial e braquiorradial. 3x15 controlado."},
+    ]},
+  ]},
+  {id:"posterior",label:"POSTERIOR",short:"Pos",wd:"Sáb",sub:"Posterior · Panturrilha · Core",trisets:[
+    {label:"Série · Isquiotibiais",single:true,ex:[
+      {n:"Cadeira Flexora",t:"Senta bem no fundo. Quadril fixo. Contrai glúteo no final."},
+      {n:"Cadeira Abdutora",t:"Controle a volta. Não deixe as placas se tocarem."},
+      {n:"Mesa Flexora",t:"Quadril encaixado. Não levante o quadril na subida."},
+      {n:"Stiff",t:"Joelho levemente flexionado. Sente o alongamento. Tronco neutro."},
+      {n:"Flexão de Joelho em Pé Maq.",t:"Isola isquio de forma diferente."},
+      {n:"A Fundo no Banco",t:"Pé elevado atrás. Desce o joelho ao chão. Glúteo + isquio."},
+    ]},
+    {label:"Panturrilha + Core",single:true,ex:[
+      {n:"Panturrilha em Pé",t:"5x20. Amplitude máxima. Pausa 1s no alto e 1s no baixo."},
+      {n:"Abd. Infra no Suporte",t:"Joelhos dobrados, sobe até o quadril. Não balance o tronco."},
+    ]},
+  ]},
+  {id:"cardio",label:"CARDIO",short:"Dom",wd:"Dom",sub:"Cardio + Abdome",isRest:true,trisets:[
+    {label:"Cardio",single:true,ex:[
+      {n:"Escada ou Esteira Inclinada",t:"30-40 min. Zona 2: falar frases completas. FC alvo 120-140 bpm."},
+    ]},
+    {label:"Abdome Completo",single:true,ex:[
+      {n:"Abdominal Supra",t:"3x20. Contração concentrada. Não trave a respiração."},
+      {n:"Elevação de Pernas",t:"3x15. Lombar colada no chão. Desce lentamente."},
+      {n:"Prancha Frontal",t:"3x45s. Quadril neutro. Respira normalmente."},
+      {n:"Abdominal Oblíquo / Bicicleta",t:"3x20 alternados. Rotação real do tronco."},
+      {n:"Hollow Body Hold",t:"2x30s. Lombar no chão, braços e pernas levemente elevados."},
+    ]},
+  ]},
+];
 
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
+const SK="dt_v1";
+let DB={week:1,sets:{},done:{},obs:{},weights:[],selEx:""};
+let currentTab="dash";
+let currentDayIdx=0;
+let timerInterval=null;
+let timerRem=0,timerTot=0,timerNext="";
+
+function load(){try{const s=localStorage.getItem(SK);if(s)DB={...DB,...JSON.parse(s)};}catch(e){}}
+function save(){try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}}
+function w(){return WC[(DB.week-1)%4];}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function doneKey(id){return id+"_"+todayStr();}
+function isDone(id){return !!DB.done[doneKey(id)];}
+function lastDone(id){
+  const prefix=id+"_";
+  const dates=Object.keys(DB.done).filter(k=>k.startsWith(prefix)&&DB.done[k]).map(k=>k.slice(prefix.length)).sort().reverse();
+  return dates[0]||null;
+}
+function sk(d,ti,ei,si){return d+"_"+ti+"_"+ei+"_"+si;}
+function getSet(d,ti,ei,si){return DB.sets[sk(d,ti,ei,si)]||{kg:"",reps:"",done:false};}
+function setSet(d,ti,ei,si,f,v){const k=sk(d,ti,ei,si);DB.sets[k]={...DB.sets[k]||{kg:"",reps:"",done:false},[f]:v};save();}
+function markDone(id,v){DB.done[doneKey(id)]=v;save();}
+function nSets(ts){return ts.single?3:w().series;}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.style.display="block";
+  setTimeout(()=>t.style.display="none",2400);
 }
 
-// RENDER TREINO
+// ── TIMER ──
+function startTimer(next){
+  clearInterval(timerInterval);
+  timerTot=w().rest; timerRem=timerTot; timerNext=next||"";
+  updateTimerUI();
+  document.getElementById("timer-overlay").classList.add("visible");
+  document.getElementById("timer-go").textContent="";
+  timerInterval=setInterval(()=>{
+    timerRem--;
+    updateTimerUI();
+    if(timerRem<=0){
+      clearInterval(timerInterval);
+      document.getElementById("timer-go").textContent="VÁ!";
+      document.getElementById("timer-arc").style.stroke="var(--green)";
+      try{navigator.vibrate&&navigator.vibrate([200,100,200,100,300]);}catch(e){}
+      playBeep();
+      setTimeout(closeTimer,2000);
+    }
+  },1000);
+}
+function updateTimerUI(){
+  const circ=521;
+  document.getElementById("timer-num").textContent=timerRem;
+  document.getElementById("timer-arc").style.strokeDashoffset=circ*(1-timerRem/timerTot);
+  document.getElementById("timer-arc").style.stroke=timerRem<=10?"var(--red)":"var(--acc)";
+  document.getElementById("timer-tot-lbl").textContent=timerTot+"s";
+  document.getElementById("timer-next").textContent=timerNext?"Próximo: "+timerNext:"";
+}
+function timerAdj(d){timerTot=Math.min(300,Math.max(15,timerTot+d));timerRem=Math.max(1,timerRem+d);updateTimerUI();}
+function closeTimer(){clearInterval(timerInterval);document.getElementById("timer-overlay").classList.remove("visible");}
+function playBeep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [[0,880],[0.18,1100],[0.36,880]].forEach(([t,f])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);o.frequency.value=f;o.type="sine";
+      g.gain.setValueAtTime(0.4,ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.15);
+      o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+0.16);
+    });
+  }catch(e){}
+}
+
+// ── NAV ──
+function goTab(tab){
+  currentTab=tab;
+  ["dash","treino","period","evol","profile"].forEach(t=>{
+    document.getElementById("screen-"+t).style.display=t===tab?"flex":"none";
+    const nb=document.getElementById("nav-"+t);
+    if(nb)nb.classList.toggle("active",t===tab);
+  });
+  render();
+}
+function goDay(i){currentDayIdx=i;goTab("treino");}
+
+// ── RENDER ──
+function render(){
+  if(currentTab==="dash")renderDash();
+  else if(currentTab==="treino")renderTreino();
+  else if(currentTab==="period")renderPeriod();
+  else if(currentTab==="evol")renderEvol();
+  else if(currentTab==="profile")renderProfile();
+}
+
+function logoSVG(){
+  return `<svg width="52" height="52" viewBox="0 0 120 120" fill="none">
+  <rect width="120" height="120" rx="24" fill="#0a0a0a"/>
+  <path d="M52 36 Q52 32 60 31.5 Q68 32 68 36 L67 45 Q60 48 53 45 Z" stroke="#d4ff00" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M53 45 Q44 43 35 40 Q28 38 25 42 Q22 47 24 53" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M67 45 Q76 43 85 40 Q92 38 95 42 Q98 47 96 53" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M24 53 Q19 60 20 68 Q21 74 25 77" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M96 53 Q101 60 100 68 Q99 74 95 77" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M25 77 Q26 64 34 59 Q42 54 51 56 Q57 58 58 66 Q59 72 56 78 Q52 85 44 86 Q35 87 30 83 Q26 80 25 77Z" stroke="#d4ff00" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M95 77 Q94 64 86 59 Q78 54 69 56 Q63 58 62 66 Q61 72 64 78 Q68 85 76 86 Q85 87 90 83 Q94 80 95 77Z" stroke="#d4ff00" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M58 66 Q60 62 62 66" stroke="#d4ff00" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M56 78 Q60 75 64 78" stroke="#d4ff00" stroke-width="1.8" stroke-linecap="round"/>
+  <rect x="54" y="86" width="12" height="9" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="54" y="97" width="12" height="9" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="54" y="108" width="12" height="8" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="41" y="86" width="11" height="9" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="40" y="97" width="11" height="9" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="41" y="108" width="11" height="8" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="68" y="86" width="11" height="9" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="69" y="97" width="11" height="9" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <rect x="68" y="108" width="11" height="8" rx="2.5" stroke="#d4ff00" stroke-width="1.8"/>
+  <path d="M25 77 Q21 84 22 93 Q23 100 27 104" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M95 77 Q99 84 98 93 Q97 100 93 104" stroke="#d4ff00" stroke-width="2.2" stroke-linecap="round"/>
+</svg>`;
+}
+
+function renderDash(){
+  const jsDay=new Date().getDay();
+  const dayMap={1:0,2:1,3:2,4:3,5:4,6:5,0:6};
+  const ti=dayMap[jsDay]??0;
+  const day=DAYS[ti];
+  const done=isDone(day.id);
+  const lW=DB.weights.length?DB.weights[DB.weights.length-1].val:null;
+  const pW=DB.weights.length>1?DB.weights[DB.weights.length-2].val:null;
+  const wd=lW&&pW?(lW-pW).toFixed(1):null;
+  const imc=lW?(lW/(1.83**2)).toFixed(1):"--";
+  const wkW=w();
+
+  const chips=DAYS.map((d,i)=>{
+    const dd=isDone(d.id),it=i===ti,ld=lastDone(d.id);
+    const fmtDate=ld?ld.slice(5).replace("-","/"):null;
+    return `<div onclick="goDay(${i})" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px;border-radius:10px;border:1.5px solid ${it?"#d4ff00":dd?"#00e676":"#282828"};background:${dd?"#0a1a0a":"#111"};min-width:50px;cursor:pointer">
+      <span style="font-size:9px;color:${it?"#d4ff00":dd?"#00e676":"#555"};font-weight:700;text-transform:uppercase">${d.short}</span>
+      <div style="width:8px;height:8px;border-radius:50%;background:${dd?"#00e676":it?"#d4ff00":"#282828"}"></div>
+      <span style="font-size:8px;color:${dd?"#00e676":"#555"};text-align:center;line-height:1.3">${dd&&fmtDate?fmtDate:d.wd}</span>
+    </div>`;
+  }).join("");
+
+  const stats=[
+    {label:"Peso Atual",val:lW?lW:"--",unit:" kg",delta:wd?`${wd>0?"+":""}${wd} kg`:lW?"Registrado":"Sem registro",dc:wd>0?"#00e676":wd<0?"#ff4500":"#555"},
+    {label:"Descanso",val:wkW.rest,unit:"s",delta:wkW.name,dc:"#555"},
+    {label:"IMC",val:imc,unit:"",delta:"1,83m · 37 anos",dc:"#555"},
+    {label:"Semana",val:DB.week,unit:"",delta:wkW.name,dc:"#d4ff00"},
+  ];
+
+  document.getElementById("screen-dash").innerHTML=`
+  <div class="scroll" style="padding-bottom:8px">
+    <div style="padding:20px 20px 16px;background:linear-gradient(160deg,#0f1a00 0%,#080808 60%)">
+      <div style="display:flex;align-items:center;gap:14px">${logoSVG()}
+        <div>
+          <div class="bebas" style="font-size:28px;letter-spacing:4px;color:#d4ff00;line-height:1">DIEGO<br>TRAINING</div>
+          <div style="font-size:11px;color:#555;letter-spacing:1px;margin-top:2px;text-transform:uppercase">Semana ${DB.week} · ${wkW.name}</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 20px 0">
+      <div class="label" style="margin-bottom:8px">Histórico</div>
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">${chips}</div>
+    </div>
+    <div style="padding:14px 20px 20px;display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="border-color:${done?"#00e676":"#282828"};overflow:hidden">
+        <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="label">Hoje · ${day.wd}</div>
+            <div class="bebas" style="font-size:28px;letter-spacing:2px;color:#f0f0f0;margin-top:2px">${day.label}</div>
+            <div style="font-size:12px;color:#aaa;margin-top:2px">${day.sub}</div>
+          </div>
+          <div style="background:${done?"#00e676":day.isRest?"#202020":"#d4ff00"};color:#000;font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:1px;padding:4px 10px;border-radius:6px;border:${day.isRest?"1px solid #282828":"none"}">
+            ${done?"FEITO ✓":day.isRest?"DESCANSO":"HOJE"}
+          </div>
+        </div>
+        <button class="btn-acc" onclick="goDay(${ti})" style="width:calc(100% - 32px);margin:0 16px 14px;background:${done?"#202020":"#d4ff00"};color:${done?"#555":"#000"};border:${done?"1px solid #282828":"none"}">
+          ${done?"✓ Treino Concluído":"Iniciar Treino →"}
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${stats.map(m=>`<div class="card" style="padding:14px">
+          <div class="label" style="margin-bottom:6px">${m.label}</div>
+          <div class="bebas" style="font-size:32px;letter-spacing:1px;line-height:1;color:#f0f0f0">${m.val}<span style="font-size:14px;color:#aaa;font-family:sans-serif;font-weight:300">${m.unit}</span></div>
+          <div style="font-size:11px;margin-top:4px;color:${m.dc}">${m.delta}</div>
+        </div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderTreino(){
-  const div = document.getElementById("lista");
-  div.innerHTML = "";
+  const day=DAYS[currentDayIdx];
+  const wk=w();
+  const done=isDone(day.id);
+  const ld=lastDone(day.id);
 
-  treinoHoje.forEach(t=>{
-    div.innerHTML += `
-      <div class="card">
-        <strong>${t.nome}</strong><br>
-        ${t.reps}
+  const daytabs=DAYS.map((d,i)=>{
+    const dd=isDone(d.id);
+    return `<button onclick="currentDayIdx=${i};render()" style="flex-shrink:0;padding:5px 12px;border-radius:20px;border:1px solid ${i===currentDayIdx?"#d4ff00":dd?"#00e676":"#282828"};background:${i===currentDayIdx?"#d4ff00":"none"};color:${i===currentDayIdx?"#000":dd?"#00e676":"#555"};font-size:12px;font-weight:${i===currentDayIdx?700:500};cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">${d.short}${dd?" ✓":""}</button>`;
+  }).join("");
+
+  const lastBadge=ld?`<div style="display:inline-flex;align-items:center;gap:6px;background:#0a1a0a;border:1px solid #00e676;border-radius:20px;padding:4px 12px;font-size:11px;color:#00e676;margin-bottom:12px">✓ Último treino: ${ld.slice(8)}/${ld.slice(5,7)}/${ld.slice(0,4)}</div>`:"";
+
+  let triHTML="";
+  day.trisets.forEach((ts,ti)=>{
+    const badge=ts.single?"SÉRIE":day.isRest?"CARDIO":"TRI-SET";
+    const badgeBg=ts.single?"#202020":day.isRest?"#00e5ff":"#d4ff00";
+    const badgeColor=ts.single?"#555":"#000";
+    let exHTML="";
+    ts.ex.forEach((ex,ei)=>{
+      const n=nSets(ts);
+      const isLastDrop=wk.drop&&!ts.single&&ei===ts.ex.length-1;
+      let nextEx="";
+      if(ei+1<ts.ex.length)nextEx=ts.ex[ei+1].n;
+      else if(ti+1<day.trisets.length&&day.trisets[ti+1].ex.length)nextEx=day.trisets[ti+1].ex[0].n;
+
+      let setsHTML="";
+      for(let s=0;s<n;s++){
+        const sv=getSet(day.id,ti,ei,s);
+        setsHTML+=`<div style="background:#181818;border:1px solid ${sv.done?"#00e676":"#282828"};border-radius:8px;padding:5px 7px;display:flex;align-items:center;gap:5px;min-width:86px">
+          <span style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;min-width:12px">S${s+1}</span>
+          <input type="number" inputmode="decimal" placeholder="kg" value="${sv.kg||""}"
+            onchange="setSet('${day.id}',${ti},${ei},${s},'kg',this.value)"
+            style="width:40px;background:#080808;border:1px solid #282828;border-radius:5px;color:#f0f0f0;font-size:12px;font-weight:700;text-align:center;padding:3px 2px"/>
+          <span style="font-size:9px;color:#555">×</span>
+          <input type="number" inputmode="numeric" placeholder="rep" value="${sv.reps||""}"
+            onchange="setSet('${day.id}',${ti},${ei},${s},'reps',this.value)"
+            style="width:40px;background:#080808;border:1px solid #282828;border-radius:5px;color:#f0f0f0;font-size:12px;font-weight:700;text-align:center;padding:3px 2px"/>
+          <button onclick="toggleSetDone('${day.id}',${ti},${ei},${s},'${nextEx.replace(/'/g,"\\'")}')"
+            style="width:20px;height:20px;border-radius:50%;border:2px solid ${sv.done?"#00e676":"#282828"};background:${sv.done?"#00e676":"none"};cursor:pointer;display:flex;align-items:center;justify-content:center;color:${sv.done?"#000":"transparent"};font-size:10px;flex-shrink:0">✓</button>
+        </div>`;
+      }
+      exHTML+=`<div style="padding:8px 0;border-bottom:${ei<ts.ex.length-1?"1px solid #282828":"none"}">
+        <div style="font-size:14px;font-weight:600;color:#f0f0f0;margin-bottom:6px;line-height:1.3">${ex.n}</div>
+        ${ex.t?`<div style="font-size:11px;color:#00e5ff;margin-bottom:8px;font-style:italic;line-height:1.4">💡 ${ex.t}</div>`:""}
+        ${isLastDrop?`<div style="display:inline-block;background:#1a0a00;border:1px solid #ff4500;color:#ff4500;font-size:9px;font-weight:700;letter-spacing:.5px;padding:1px 6px;border-radius:4px;margin-bottom:6px;text-transform:uppercase">Drop-set na última série</div>`:""}
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${setsHTML}</div>
+      </div>`;
+    });
+    triHTML+=`<div class="card" style="margin-bottom:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#181818;border-bottom:1px solid #282828">
+        <span style="background:${badgeBg};color:${badgeColor};font-family:'Bebas Neue',cursive;font-size:10px;letter-spacing:1px;padding:2px 7px;border-radius:4px;border:${ts.single?"1px solid #282828":"none"}">${badge}</span>
+        <span style="font-size:11px;font-weight:600;color:#555;flex:1;text-transform:uppercase;letter-spacing:.5px">${ts.label}</span>
+        ${!ts.single?`<span style="font-size:11px;color:#d4ff00;font-weight:700">${wk.series}×${wk.reps}</span>`:""}
       </div>
-    `;
-  });
-}
-
-// PESO (LOCAL STORAGE)
-function salvarPeso(){
-  const input = document.getElementById("peso");
-  const valor = input.value;
-
-  if(!valor) return;
-
-  let dados = JSON.parse(localStorage.getItem("pesos") || "[]");
-
-  dados.push({
-    peso: valor,
-    data: new Date().toLocaleDateString()
+      <div style="padding:8px 14px 12px">${exHTML}</div>
+    </div>`;
   });
 
-  localStorage.setItem("pesos", JSON.stringify(dados));
-
-  input.value = "";
-  renderHistorico();
-}
-
-// HISTÓRICO
-function renderHistorico(){
-  const div = document.getElementById("historico");
-  const dados = JSON.parse(localStorage.getItem("pesos") || "[]");
-
-  div.innerHTML = "";
-
-  dados.reverse().forEach(d=>{
-    div.innerHTML += `
-      <div class="card">
-        ${d.peso} kg - ${d.data}
+  document.getElementById("screen-treino").innerHTML=`
+  <div style="padding:16px 20px 12px;background:#080808;border-bottom:1px solid #282828;flex-shrink:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="bebas" style="font-size:28px;letter-spacing:2px;color:#d4ff00">${day.label}</div>
+      <div style="font-size:11px;color:#555;text-align:right;line-height:1.5">
+        <strong style="color:#aaa">Sem ${wk.num} · ${wk.name}</strong><br>${wk.series}×${wk.reps} · ${wk.rest}s
       </div>
-    `;
-  });
+    </div>
+    <div style="display:flex;gap:6px;overflow-x:auto">${daytabs}</div>
+  </div>
+  <div class="scroll" style="padding:16px 20px 20px">
+    ${lastBadge}
+    <div class="card" style="padding:12px 14px;margin-bottom:14px;display:flex;gap:14px;align-items:center">
+      ${[{v:wk.series,l:"Séries"},{v:wk.reps,l:"Reps"},{v:wk.rest+"s",l:"Desc."}].map((p,i)=>`
+        ${i>0?`<div style="width:1px;height:32px;background:#282828"></div>`:""}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div class="bebas" style="font-size:22px;letter-spacing:1px;color:#d4ff00;line-height:1">${p.v}</div>
+          <div class="label">${p.l}</div>
+        </div>`).join("")}
+      <div style="width:1px;height:32px;background:#282828"></div>
+      <div style="flex:1;font-size:12px;color:#aaa;line-height:1.4">
+        <strong style="display:block;color:#f0f0f0;font-weight:700;font-size:13px">${wk.name}</strong>
+        ${wk.drop?`<span style="color:#ff4500;font-size:11px">Drop-set ativo</span>`:""}
+      </div>
+    </div>
+    ${triHTML}
+    <div style="margin-top:16px">
+      <div class="label" style="margin-bottom:6px">Observações</div>
+      <textarea onchange="DB.obs['${day.id}']=this.value;save()" placeholder="Cargas, sensações, PR..."
+        style="width:100%;background:#111;border:1px solid #282828;border-radius:12px;color:#f0f0f0;font-size:13px;padding:10px;resize:none;min-height:70px;font-family:'DM Sans',sans-serif">${DB.obs[day.id]||""}</textarea>
+
+```
+</div>
+<div style="margin-top:16px">
+  <button onclick="toggleDayDone('${day.id}')" style="width:100%;background:${done?"#00e676":"#d4ff00"};color:#000;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+    ${done?"✓ Concluído — Toque para desfazer":"Marcar Treino como Concluído"}
+  </button>
+</div>
+```
+
+  </div>`;
 }
 
-// INIT
-renderTreino();
-renderHistorico();
+function toggleSetDone(d,ti,ei,si,next){
+const sv=getSet(d,ti,ei,si);
+const nv=!sv.done;
+setSet(d,ti,ei,si,“done”,nv);
+if(nv)startTimer(next);
+render();
+}
+function toggleDayDone(id){
+const nv=!isDone(id);
+markDone(id,nv);
+if(nv)showToast(“Treino concluído! 💪 Salvo.”);
+render();
+}
 
+function renderPeriod(){
+const cur=WC[(DB.week-1)%4];
+let html=`<div class="scroll" style="padding:16px 20px 20px"> <div class="bebas" style="font-size:32px;letter-spacing:3px;color:#d4ff00;margin-bottom:4px">CICLO</div> <div style="font-size:12px;color:#555;margin-bottom:20px">Periodização 4 semanas · Hipertrofia avançada</div>`;
+WC.forEach(wk=>{
+const ic=wk.num===cur.num;
+html+=`<div class="card" style="border-color:${ic?"#d4ff00":"#282828"};overflow:hidden;margin-bottom:12px"> <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#181818"> <span class="bebas" style="font-size:13px;letter-spacing:1px;color:${ic?"#d4ff00":"#555"}">SEMANA ${wk.num}</span> <span style="font-size:14px;font-weight:700;color:${ic?"#d4ff00":"#f0f0f0"};flex:1">${wk.name}</span> ${ic?`<span style="background:#d4ff00;color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.5px">ATUAL</span>`:""} </div> <div style="padding:12px 14px"> <div style="font-size:13px;color:#aaa;line-height:1.6;margin-bottom:10px">${wk.desc}</div> <div style="display:flex;gap:10px;flex-wrap:wrap"> ${[{v:wk.series,l:"Séries"},{v:wk.reps,l:"Reps"},{v:wk.rest+"s",l:"Descanso"},{v:wk.drop?"SIM":"NÃO",l:"Drop-set"}].map(p=>`
+<div style="background:#202020;border:1px solid #282828;border-radius:6px;padding:6px 10px;text-align:center">
+<div class="bebas" style="font-size:18px;color:#d4ff00;line-height:1">${p.v}</div>
+<div class="label">${p.l}</div>
+</div>`).join("")} </div> </div> </div>`;
+});
+html+=`<div style="margin-top:20px">
+<div class="label" style="margin-bottom:8px">Semana do Programa</div>
+<div style="display:flex;gap:8px;align-items:center">
+<button onclick="DB.week=Math.max(1,DB.week-1);save();render()" style="background:#181818;border:1px solid #282828;border-radius:8px;color:#f0f0f0;padding:10px 18px;font-size:18px;cursor:pointer">−</button>
+<div class="bebas" style="flex:1;background:#111;border:1px solid #282828;border-radius:8px;padding:12px;text-align:center;font-size:24px;letter-spacing:2px;color:#d4ff00">SEMANA ${DB.week}</div>
+<button onclick="DB.week++;save();showToast('Semana '+DB.week);render()" style="background:#181818;border:1px solid #282828;border-radius:8px;color:#f0f0f0;padding:10px 18px;font-size:18px;cursor:pointer">+</button>
+</div>
+<div style="font-size:11px;color:#555;margin-top:6px;text-align:center">Avance ao iniciar novo microciclo semanal</div>
+
+  </div></div>`;
+  document.getElementById("screen-period").innerHTML=html;
+}
+
+function renderEvol(){
+const ws=DB.weights;
+const lW=ws.length?ws[ws.length-1].val:null;
+let graphHTML=””;
+if(ws.length>1){
+const vals=ws.map(x=>x.val),mn=Math.min(…vals)-1,mx=Math.max(…vals)+1;
+const W=300,H=70,xs=W/(vals.length-1);
+const pts=vals.map((v,i)=>`${i*xs},${H-((v-mn)/(mx-mn))*H}`).join(” “);
+graphHTML=`<div class="card" style="padding:14px;margin-bottom:12px"> <div class="label" style="margin-bottom:12px">Peso Corporal (kg)</div> <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:70px"> <polyline points="${pts}" fill="none" stroke="#d4ff00" stroke-width="2.5" stroke-linejoin="round"/> ${vals.map((v,i)=>`<circle cx="${i*xs}" cy="${H-((v-mn)/(mx-mn))*H}" r="3.5" fill="#d4ff00"/>`).join("")} </svg> <div style="display:flex;justify-content:space-between;margin-top:6px"> <span style="font-size:10px;color:#555">${ws[0].date}</span> <span style="font-size:10px;color:#555">${ws[ws.length-1].date}</span> </div> </div>`;
+}
+
+const allEx=[];
+DAYS.forEach(d=>d.trisets.forEach(ts=>ts.ex.forEach(ex=>{if(!allEx.find(e=>e.n===ex.n))allEx.push({n:ex.n,id:d.id});})));
+const sel=DB.selEx||allEx[0].n;
+const exO=allEx.find(e=>e.n===sel);
+const wk=w();
+let hist=[];
+if(exO){
+const day=DAYS.find(d=>d.id===exO.id);
+if(day){let ti=-1,ei=-1;
+day.trisets.forEach((ts,tIdx)=>ts.ex.forEach((ex,eIdx)=>{if(ex.n===sel){ti=tIdx;ei=eIdx;}}));
+if(ti>=0){for(let s=0;s<wk.series;s++){const sv=getSet(exO.id,ti,ei,s);if(sv.kg)hist.push({date:`Sem ${DB.week}`,kg:sv.kg,reps:sv.reps});}}
+}
+}
+
+document.getElementById(“screen-evol”).innerHTML=`<div class="scroll" style="padding:16px 20px 20px"> <div class="bebas" style="font-size:32px;letter-spacing:3px;color:#d4ff00;margin-bottom:4px">EVOLUÇÃO</div> <div style="font-size:12px;color:#555;margin-bottom:16px">Cargas e composição corporal</div> <div class="card" style="padding:14px;margin-bottom:12px"> <div class="label" style="margin-bottom:10px">Registrar Peso Corporal</div> <div style="display:flex;gap:10px;align-items:center"> <input type="number" inputmode="decimal" id="wInput" placeholder="${lW||"80.5"}" style="flex:1;background:#080808;border:1px solid #282828;border-radius:8px;color:#f0f0f0;font-size:22px;font-weight:700;text-align:center;padding:10px"/> <button onclick="saveWeight()" style="background:#d4ff00;color:#000;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">Salvar</button> </div> </div> ${graphHTML} <div class="label" style="margin:16px 0 8px">Histórico de Carga por Exercício</div> <select onchange="DB.selEx=this.value;save();render()" style="width:100%;background:#111;border:1px solid #282828;border-radius:8px;color:#f0f0f0;font-size:14px;padding:10px;margin-bottom:10px;font-family:'DM Sans',sans-serif"> ${allEx.map(e=>`<option value=”${e.n}” ${e.n===sel?“selected”:””}>${e.n}</option>`).join("")} </select> <div style="display:flex;flex-direction:column;gap:6px"> ${hist.length?hist.map((h,i)=>{ const prev=hist[i-1]; const d2=prev&&h.kg&&prev.kg?(parseFloat(h.kg)-parseFloat(prev.kg)).toFixed(1):null; return `<div class="card" style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between">
+<span style="font-size:11px;color:#555">${h.date} · S${i+1}</span>
+<span style="font-size:13px;font-weight:700;color:#f0f0f0">${h.kg}kg × ${h.reps||”?”} rep</span>
+${d2?`<span style="font-size:11px;color:${d2>0?"#00e676":d2<0?"#ff4500":"#555"}">${d2>0?"+":""}${d2}kg</span>`:””}
+</div>`; }).join(""):`<div style="font-size:13px;color:#555;text-align:center;padding:20px 0">Registre cargas no treino para ver histórico.</div>`}
+</div>
+
+  </div>`;
+}
+
+function saveWeight(){
+const v=parseFloat(document.getElementById(“wInput”).value);
+if(!v||v<30||v>200){showToast(“Peso inválido”);return;}
+const date=new Date().toLocaleDateString(“pt-BR”,{day:“2-digit”,month:“2-digit”});
+DB.weights.push({date,val:v});
+save();showToast(v+” kg registrado ✓”);render();
+}
+
+function renderProfile(){
+const lW=DB.weights.length?DB.weights[DB.weights.length-1].val:80.5;
+const imc=(lW/(1.83**2)).toFixed(1);
+const tmb=Math.round(88.36+(13.4*lW)+(4.8*183)-(5.7*37));
+const tdee=Math.round(tmb*1.725);
+
+const allDone=Object.entries(DB.done)
+.filter(([k,v])=>v)
+.map(([k])=>{const parts=k.split(”*”);const date=parts[parts.length-1];const id=parts.slice(0,-1).join(”*”);const day=DAYS.find(d=>d.id===id);return{id,date,label:day?.label||id};})
+.sort((a,b)=>b.date.localeCompare(a.date));
+
+const rows=[
+[“Nome”,“Diego”,true],[“Idade”,“37 anos”,false],[“Altura”,“1,83 m”,false],
+[“Peso Atual”,lW+” kg”,true],[“IMC”,imc,false],[“Experiência”,“20 anos”,false],
+[“Objetivo”,“Hipertrofia”,true],[“Frequência”,“6x / semana”,false],
+];
+const nutr=[
+[“TMB”,tmb+” kcal”,false],[“TDEE (6x semana)”,tdee+” kcal”,true],
+[“Meta Hipertrofia (+300)”,(tdee+300)+” kcal”,false],
+[“Proteína mínima”,Math.round(lW*2)+“g / dia”,false],
+[“Proteína ideal”,Math.round(lW*2.4)+“g / dia”,true],
+[“Água mínima”,“3,5L / dia”,false],
+];
+
+function tableHTML(arr){
+return `<div class="card" style="padding:0 14px;margin-bottom:12px"> ${arr.map(([k,v,hi],i)=>`<div style=“display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:${i<arr.length-1?“1px solid #282828”:“none”}”>
+<span style="font-size:12px;color:#555;font-weight:500">${k}</span>
+<span style=“font-size:14px;font-weight:700;color:${hi?”#d4ff00”:”#f0f0f0”}”>${v}</span>
+</div>`).join("")} </div>`;
+}
+
+document.getElementById(“screen-profile”).innerHTML=`<div class="scroll" style="padding:16px 20px 20px"> <div class="bebas" style="font-size:32px;letter-spacing:3px;color:#d4ff00;margin-bottom:4px">PERFIL</div> <div style="font-size:12px;color:#555;margin-bottom:20px">Biometria · Nutrição · Histórico</div> <div class="label" style="margin-bottom:8px">Log de Treinos</div> <div class="card" style="padding:0 14px;margin-bottom:16px"> ${allDone.length===0?`<div style="padding:14px 0;font-size:13px;color:#555">Nenhum treino concluído ainda.</div>` :allDone.slice(0,30).map(({label,date},i)=>`<div style=“display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:${i<Math.min(allDone.length,30)-1?“1px solid #282828”:“none”}”>
+<span style="font-size:13px;font-weight:600;color:#f0f0f0">${label}</span>
+<span style="font-size:12px;color:#00e676">${date.slice(8)}/${date.slice(5,7)}/${date.slice(0,4)}</span>
+</div>`).join(””)}
+</div>
+<div class="label" style="margin-bottom:8px">Dados Pessoais</div>${tableHTML(rows)}
+<div class="label" style="margin-bottom:8px">Referências Nutricionais</div>${tableHTML(nutr)}
+<button onclick="if(confirm('Apagar TODOS os dados? Irreversível.')){localStorage.removeItem('${SK}');location.reload();}"
+style="width:100%;background:none;border:1px solid #282828;border-radius:12px;padding:12px;color:#555;font-size:13px;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif">
+Resetar todos os dados
+</button>
+
+  </div>`;
+}
+
+// ── INIT ──
+load();
+goTab(“dash”);
 </script>
 
 </body>
