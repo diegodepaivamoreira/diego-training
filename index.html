@@ -13,112 +13,58 @@ body{margin:0;background:#050505;color:#fff;font-family:Arial}
 #app{max-width:520px;margin:auto}
 
 /* HEADER */
-.header{
-  padding:20px;
-}
-.title{
-  color:#d4ff00;
-  font-size:26px;
-  font-weight:bold;
-}
+.header{padding:20px}
+.title{color:#d4ff00;font-size:26px;font-weight:bold}
 
 /* NAV */
-.nav{
-  display:flex;
-  border-top:1px solid #222;
-}
-.nav button{
-  flex:1;
-  padding:10px;
-  background:#111;
-  color:#777;
-  border:none;
-}
+.nav{display:flex;border-top:1px solid #222}
+.nav button{flex:1;padding:10px;background:#111;color:#777;border:none}
 .nav .active{color:#d4ff00}
 
 /* CARD */
-.card{
-  background:#111;
-  margin:10px;
-  padding:15px;
-  border-radius:14px;
-}
+.card{background:#111;margin:10px;padding:15px;border-radius:14px}
 
-/* HOME */
-.big{font-size:22px;font-weight:bold}
-.btn{
-  background:#d4ff00;
-  color:#000;
-  padding:14px;
-  border:none;
-  border-radius:10px;
-  width:100%;
-  margin-top:10px;
-}
+/* UI */
+.btn{background:#d4ff00;color:#000;padding:12px;border:none;border-radius:10px;width:100%}
+.big{font-size:20px;font-weight:bold}
+.small{font-size:12px;color:#aaa}
 
-/* TREINO */
-.exercise{margin-top:15px;border-top:1px solid #222;padding-top:10px}
+/* SERIES */
 .series{display:flex;gap:6px;margin-top:6px}
-input{
-  background:#000;
-  border:1px solid #333;
-  border-radius:6px;
-  color:#fff;
-  padding:6px;
-  width:55px;
-}
-.check{
-  width:24px;height:24px;border-radius:50%;
-  border:2px solid #444;
-}
+input{width:55px;padding:6px;background:#000;border:1px solid #333;color:#fff}
+.check{width:22px;height:22px;border-radius:50%;border:2px solid #444}
 .done{background:#00e676}
 
 /* TIMER */
-.timer{
-  font-size:40px;
-  text-align:center;
-  color:#d4ff00;
+#overlay{
+position:fixed;inset:0;background:#000e;
+display:none;align-items:center;justify-content:center;
+font-size:60px;color:#d4ff00;z-index:999;
 }
 </style>
 </head>
 
 <body>
 
+<div id="overlay"></div>
+
 <div id="app">
-
-<div class="header">
-  <div class="title">DIEGO TRAINING</div>
-</div>
-
+<div class="header"><div class="title">DIEGO TRAINING</div></div>
 <div id="screen"></div>
 
 <div class="nav">
-  <button onclick="go('home')" id="nav-home">Home</button>
-  <button onclick="go('treino')" id="nav-treino">Treino</button>
-  <button onclick="go('evol')" id="nav-evol">Evolução</button>
+<button onclick="go('home')" id="nav-home">Home</button>
+<button onclick="go('treino')" id="nav-treino">Treino</button>
+<button onclick="go('evol')" id="nav-evol">Evolução</button>
+<button onclick="go('perf')" id="nav-perf">Performance</button>
+<button onclick="go('cal')" id="nav-cal">Calendário</button>
 </div>
-
 </div>
 
 <script>
 
-// =====================
-// 📊 PERIODIZAÇÃO
-// =====================
-const periodizacao = [
-{sem:1,series:3,reps:"10",rest:60},
-{sem:2,series:3,reps:"8-10",rest:60},
-{sem:3,series:4,reps:"6-8",rest:75},
-{sem:4,series:2,reps:"12",rest:45}
-];
-
-let semana = Number(localStorage.getItem("semana")||1);
-let cfg = periodizacao.find(p=>p.sem===semana);
-
-// =====================
-// 🏋️ TREINOS
-// =====================
-const treinos = {
+// ===== DADOS =====
+const treinos={
 Peito:["Supino","Cross","Crucifixo"],
 Costas:["Barra fixa","Puxada","Remada"],
 Anterior:["Agachamento","Leg press","Extensora"],
@@ -127,178 +73,175 @@ Bracos:["Rosca","Tríceps","Martelo"],
 Posterior:["Flexora","Stiff","Panturrilha"]
 };
 
+const period=[
+{sem:1,s:3,r:"10",rest:60},
+{sem:2,s:3,r:"8-10",rest:60},
+{sem:3,s:4,r:"6-8",rest:75},
+{sem:4,s:2,r:"12",rest:45}
+];
+
+let semana=Number(localStorage.getItem("semana")||1);
+let cfg=period.find(p=>p.sem===semana);
+
 let atual="Peito";
-let dados = JSON.parse(localStorage.getItem("dados")||"{}");
-let hist = JSON.parse(localStorage.getItem("hist")||"{}");
+let dados=JSON.parse(localStorage.getItem("dados")||"{}");
+let hist=JSON.parse(localStorage.getItem("hist")||"{}");
 
-// =====================
-// 🧭 NAVEGAÇÃO
-// =====================
-function go(tela){
-  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
-  document.getElementById("nav-"+tela).classList.add("active");
+// ===== NAV =====
+function go(t){
+document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+document.getElementById("nav-"+t).classList.add("active");
 
-  if(tela==="home") renderHome();
-  if(tela==="treino") renderTreino();
-  if(tela==="evol") renderEvol();
+if(t==="home")home();
+if(t==="treino")treino();
+if(t==="evol")evol();
+if(t==="perf")perf();
+if(t==="cal")cal();
 }
 
-// =====================
-// 🏠 HOME (AGORA FORTE)
-// =====================
-function renderHome(){
+// ===== HOME =====
+function home(){
 
-  document.getElementById("screen").innerHTML=`
-  <div class="card">
-    <div class="big">Semana ${semana}</div>
-    <div>${cfg.series} séries · ${cfg.reps} reps · ${cfg.rest}s</div>
-  </div>
+let last=Object.keys(hist).slice(-1)[0]||"-";
 
-  <div class="card">
-    <div class="big">Treino de hoje</div>
-    <div>${atual}</div>
-    <button class="btn" onclick="go('treino')">Iniciar treino</button>
-  </div>
+document.getElementById("screen").innerHTML=`
+<div class="card">
+<div class="big">Semana ${semana}</div>
+<div>${cfg.s} séries · ${cfg.r} reps · ${cfg.rest}s</div>
+</div>
 
-  <div class="card">
-    <div class="big">Progresso</div>
-    <div>Total treinos: ${Object.keys(hist).length}</div>
-  </div>
-  `;
+<div class="card">
+<div class="big">Escolher treino</div>
+<select onchange="atual=this.value" style="width:100%;padding:10px;margin-top:10px">
+${Object.keys(treinos).map(t=>`<option ${t===atual?"selected":""}>${t}</option>`)}
+</select>
+<button class="btn" onclick="go('treino')">Iniciar</button>
+</div>
+
+<div class="card">
+<div class="big">Último treino</div>
+<div>${last}</div>
+</div>
+`;
 }
 
-// =====================
-// 🏋️ TREINO (GUIADO)
-// =====================
-function renderTreino(){
+// ===== TREINO =====
+function treino(){
 
-  let treino = treinos[atual];
+let t=treinos[atual];
+let html=`<div class="card"><h2>${atual}</h2>`;
 
-  let html=`<div class="card"><h2>${atual}</h2>`;
+t.forEach((ex,i)=>{
+html+=`<div class="exercise">
+<b>${ex}</b>
+${series(i)}
+</div>`;
+});
 
-  treino.forEach((ex,i)=>{
-
-    html+=`
-    <div class="exercise">
-      <b>${ex}</b>
-
-      ${renderSeries(i)}
-    </div>
-    `;
-  });
-
-  html+=`
-  <div class="card">
-    <div class="timer" id="timer">60</div>
-  </div>
-
-  <button class="btn" onclick="finalizar()">Finalizar treino</button>
-  `;
-
-  document.getElementById("screen").innerHTML=html;
+html+=`<button class="btn" onclick="finalizar()">Finalizar</button></div>`;
+document.getElementById("screen").innerHTML=html;
 }
 
-// =====================
-// 🔢 SÉRIES
-// =====================
-function renderSeries(i){
-
-  let html="";
-
-  for(let s=0;s<cfg.series;s++){
-
-    let v = dados[atual]?.[i]?.[s] || {};
-
-    html+=`
-    <div class="series">
-      <input placeholder="kg" value="${v.kg||""}"
-      oninput="save(${i},${s},'kg',this.value)">
-
-      <input placeholder="rep" value="${v.rep||""}"
-      oninput="save(${i},${s},'rep',this.value)">
-
-      <div class="check ${v.done?'done':''}"
-      onclick="toggle(${i},${s})"></div>
-    </div>
-    `;
-  }
-
-  return html;
+function series(i){
+let html="";
+for(let s=0;s<cfg.s;s++){
+let v=dados[atual]?.[i]?.[s]||{};
+html+=`
+<div class="series">
+<input placeholder="kg" value="${v.kg||""}" oninput="save(${i},${s},'kg',this.value)">
+<input placeholder="rep" value="${v.rep||""}" oninput="save(${i},${s},'rep',this.value)">
+<div class="check ${v.done?'done':''}" onclick="toggle(${i},${s})"></div>
+</div>`;
+}
+return html;
 }
 
-// =====================
-// 💾 SAVE
-// =====================
+// ===== SAVE =====
 function save(i,s,k,v){
-  if(!dados[atual]) dados[atual]={};
-  if(!dados[atual][i]) dados[atual][i]={};
-  if(!dados[atual][i][s]) dados[atual][i][s]={};
-
-  dados[atual][i][s][k]=v;
-  localStorage.setItem("dados",JSON.stringify(dados));
+dados[atual]=dados[atual]||{};
+dados[atual][i]=dados[atual][i]||{};
+dados[atual][i][s]=dados[atual][i][s]||{};
+dados[atual][i][s][k]=v;
+localStorage.setItem("dados",JSON.stringify(dados));
 }
 
-// =====================
-// ✔ CHECK + TIMER
-// =====================
-let tempo=60, int;
-
+// ===== TIMER =====
+let int;
 function toggle(i,s){
 
-  if(!dados[atual]) dados[atual]={};
-  if(!dados[atual][i]) dados[atual][i]={};
-  if(!dados[atual][i][s]) dados[atual][i][s]={};
+let v=dados[atual]?.[i]?.[s]||{};
+v.done=!v.done;
 
-  dados[atual][i][s].done = !dados[atual][i][s].done;
+dados[atual][i][s]=v;
+localStorage.setItem("dados",JSON.stringify(dados));
 
-  localStorage.setItem("dados",JSON.stringify(dados));
-
-  startTimer();
-  renderTreino();
+startTimer();
+treino();
 }
 
 function startTimer(){
-  clearInterval(int);
-  tempo=cfg.rest;
+let t=cfg.rest;
+let o=document.getElementById("overlay");
+o.style.display="flex";
+o.innerText=t;
 
-  int=setInterval(()=>{
-    tempo--;
-    document.getElementById("timer").innerText=tempo;
-    if(tempo<=0) clearInterval(int);
-  },1000);
+clearInterval(int);
+int=setInterval(()=>{
+t--;
+o.innerText=t;
+if(t<=0){
+clearInterval(int);
+o.style.display="none";
+}
+},1000);
 }
 
-// =====================
-// 📊 EVOLUÇÃO (GRÁFICO SEPARADO)
-// =====================
-function renderEvol(){
-
-  document.getElementById("screen").innerHTML=`
-  <div class="card">
-    <canvas id="graf"></canvas>
-  </div>
-  `;
-
-  new Chart(document.getElementById("graf"),{
-    type:"line",
-    data:{
-      labels:["Dez","Fev","Mar"],
-      datasets:[{data:[77,78,80]}]
-    }
-  });
-}
-
-// =====================
-// FINALIZAR
-// =====================
+// ===== FINALIZAR =====
 function finalizar(){
 
-  semana++;
-  if(semana>4) semana=1;
+hist[new Date().toLocaleDateString()]=atual;
+localStorage.setItem("hist",JSON.stringify(hist));
 
-  localStorage.setItem("semana",semana);
+semana++;
+if(semana>4)semana=1;
+localStorage.setItem("semana",semana);
 
-  alert("Treino salvo 🔥");
+alert("Treino salvo 🔥");
+}
+
+// ===== EVOL =====
+function evol(){
+document.getElementById("screen").innerHTML=`<div class="card"><canvas id="g"></canvas></div>`;
+new Chart(document.getElementById("g"),{
+type:"line",
+data:{labels:["1","2","3"],datasets:[{data:[77,78,80]}]}
+});
+}
+
+// ===== PERFORMANCE =====
+function perf(){
+
+let html=`<div class="card"><h2>Performance</h2>`;
+
+Object.keys(hist).forEach(d=>{
+html+=`<div>${d} - ${hist[d]}</div>`;
+});
+
+html+=`</div>`;
+document.getElementById("screen").innerHTML=html;
+}
+
+// ===== CALENDÁRIO =====
+function cal(){
+
+let html=`<div class="card"><h2>Calendário</h2>`;
+
+Object.keys(hist).forEach(d=>{
+html+=`<div>🟩 ${d}</div>`;
+});
+
+html+=`</div>`;
+document.getElementById("screen").innerHTML=html;
 }
 
 // INIT
