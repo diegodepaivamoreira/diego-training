@@ -1,2 +1,2 @@
-# diego-training
+# Diego-training
 App de treino diário
