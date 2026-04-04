@@ -1,45 +1,15 @@
 <!DOCTYPE html>
 
-<html lang="pt-BR">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diego Training</title>
-<style>
-body { background: #080808; color: #f0f0f0; font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-h1 { color: #d4ff00; font-size: 26px; margin-bottom: 16px; }
-p { color: #aaa; margin-bottom: 8px; font-size: 14px; }
-#out { background: #111; border: 1px solid #333; border-radius: 8px; padding: 14px; }
-</style>
+<title>Teste</title>
 </head>
-<body>
-<h1>DIEGO TRAINING</h1>
-<div id="out">
-  <p id="p1">Aguardando...</p>
-  <p id="p2"></p>
-  <p id="p3"></p>
-  <p id="p4"></p>
-  <p id="p5"></p>
-</div>
-<script>
-document.getElementById('p1').textContent = 'Teste 1 OK - script rodou';
-
-var x = 1 + 1;
-document.getElementById(‘p2’).textContent = ’Teste 2 OK - calculo: ’ + x;
-
-try {
-localStorage.setItem(‘t’, ‘1’);
-document.getElementById(‘p3’).textContent = ‘Teste 3 OK - localStorage funciona’;
-} catch(e) {
-document.getElementById(‘p3’).textContent = ’Teste 3 ERRO - localStorage: ’ + e.message;
-}
-
-var hoje = new Date().toISOString().slice(0, 10);
-document.getElementById(‘p4’).textContent = ’Teste 4 OK - data: ’ + hoje;
-
-document.getElementById(‘p5’).textContent = ‘Todos os testes passaram!’;
-document.getElementById(‘p5’).style.color = ‘#00e676’;
-</script>
-
+<body style="background:#080808;color:#f0f0f0;font-family:Arial;padding:20px">
+<h1 style="color:#d4ff00">Teste</h1>
+<p id="a" style="color:#aaa">HTML carregou</p>
+<p id="b" style="color:#aaa">JS ainda nao rodou</p>
+<script>document.getElementById('b').textContent='JS RODOU!';</script>
 </body>
 </html>
