@@ -3,249 +3,258 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <title>Diego Training PRO</title>
 
 <style>
 body{margin:0;background:#050505;color:#fff;font-family:Arial}
 #app{max-width:520px;margin:auto}
 
-/* HEADER */
-.header{padding:20px}
-.title{color:#d4ff00;font-size:26px;font-weight:bold}
+.title{color:#d4ff00;font-size:26px;padding:20px;font-weight:bold}
 
-/* NAV */
-.nav{display:flex;border-top:1px solid #222}
-.nav button{flex:1;padding:10px;background:#111;color:#777;border:none}
-.nav .active{color:#d4ff00}
+.chips{display:flex;gap:8px;overflow:auto;padding:10px}
+.chip{background:#222;padding:10px;border-radius:20px}
+.active{background:#d4ff00;color:#000}
 
-/* CARD */
-.card{background:#111;margin:10px;padding:15px;border-radius:14px}
+.card{background:#111;margin:10px;padding:15px;border-radius:12px}
 
-/* UI */
-.btn{background:#d4ff00;color:#000;padding:12px;border:none;border-radius:10px;width:100%}
-.big{font-size:20px;font-weight:bold}
-.small{font-size:12px;color:#aaa}
+.exercise{margin-top:12px;padding-top:10px;border-top:1px solid #222}
 
-/* SERIES */
+.tag{font-size:11px;background:#222;padding:4px 8px;border-radius:6px;margin-bottom:6px}
+
 .series{display:flex;gap:6px;margin-top:6px}
 input{width:55px;padding:6px;background:#000;border:1px solid #333;color:#fff}
-.check{width:22px;height:22px;border-radius:50%;border:2px solid #444}
+
+.check{
+width:24px;height:24px;border-radius:50%;
+border:2px solid #444;
+}
 .done{background:#00e676}
 
-/* TIMER */
-#overlay{
-position:fixed;inset:0;background:#000e;
-display:none;align-items:center;justify-content:center;
-font-size:60px;color:#d4ff00;z-index:999;
+.btn{
+background:#d4ff00;color:#000;padding:12px;
+border:none;border-radius:10px;width:100%;margin-top:15px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="overlay"></div>
-
 <div id="app">
-<div class="header"><div class="title">DIEGO TRAINING</div></div>
+<div class="title">DIEGO TRAINING</div>
+
+<div class="chips" id="chips"></div>
 <div id="screen"></div>
 
-<div class="nav">
-<button onclick="go('home')" id="nav-home">Home</button>
-<button onclick="go('treino')" id="nav-treino">Treino</button>
-<button onclick="go('evol')" id="nav-evol">Evolução</button>
-<button onclick="go('perf')" id="nav-perf">Performance</button>
-<button onclick="go('cal')" id="nav-cal">Calendário</button>
-</div>
 </div>
 
 <script>
 
-// ===== DADOS =====
-const treinos={
-Peito:["Supino","Cross","Crucifixo"],
-Costas:["Barra fixa","Puxada","Remada"],
-Anterior:["Agachamento","Leg press","Extensora"],
-Ombros:["Desenvolvimento","Elevação","Posterior"],
-Bracos:["Rosca","Tríceps","Martelo"],
-Posterior:["Flexora","Stiff","Panturrilha"]
+// ===== TREINOS 100% CORRETOS =====
+const treinos = {
+
+Peito:[
+{tipo:"TRI-SET",ex:[
+"Supino declinado HBL",
+"Cross over",
+"Crucifixo declinado HBC"
+]},
+{tipo:"TRI-SET",ex:[
+"Supino reto HBL",
+"Supino reto HBC",
+"Crucifixo máquina"
+]},
+{tipo:"TRI-SET",ex:[
+"Supino 45 HBL",
+"Supino 45 HBC",
+"Crucifixo 45 HBC"
+]}
+],
+
+Costas:[
+{tipo:"TRI-SET",ex:[
+"Barra fixa frente",
+"Puxada hammer",
+"Puxada frente paralela"
+]},
+{tipo:"TRI-SET",ex:[
+"Puxada por trás",
+"Puxada articulada",
+"Puxada frente paralela"
+]},
+{tipo:"TRI-SET",ex:[
+"Remada inclinada",
+"Remada unilateral HBC",
+"Remada sentada"
+]}
+],
+
+Anterior:[
+{tipo:"SEQUÊNCIA",ex:[
+"Agachamento Smith",
+"Leg press 45",
+"Leg horizontal",
+"Cadeira extensora",
+"Agachamento unilateral Smith",
+"Cadeira adutora",
+"Abdominal lateral prancha"
+]}
+],
+
+Ombros:[
+{tipo:"TRI-SET",ex:[
+"Abdução HBC",
+"Cross posterior unilateral",
+"Abdução cotovelos"
+]},
+{tipo:"TRI-SET",ex:[
+"Desenvolvimento máquina",
+"Flexão ombro HBC",
+"Flexão cross"
+]},
+{tipo:"BI-SET",ex:[
+"Desenvolvimento Smith atrás",
+"Crucifixo inverso máquina"
+]},
+{tipo:"TRI-SET",ex:[
+"Encolhimento HBC",
+"Remada alta cross",
+"Encolhimento máquina"
+]}
+],
+
+Bracos:[
+{tipo:"TRI-SET",ex:[
+"Rosca direta HBM",
+"Rosca Scott máquina",
+"Rosca alternada HBC"
+]},
+{tipo:"TRI-SET",ex:[
+"Tríceps testa HBW",
+"Tríceps pulley",
+"Tríceps corda"
+]},
+{tipo:"ISOLADO",ex:[
+"Rosca martelo"
+]}
+],
+
+Posterior:[
+{tipo:"SEQUÊNCIA",ex:[
+"Cadeira flexora",
+"Cadeira abdutora",
+"Mesa flexora",
+"Stiff",
+"Flexão joelho em pé",
+"Afundo banco",
+"Panturrilha em pé",
+"Abdominal infra"
+]}
+]
+
 };
 
-const period=[
-{sem:1,s:3,r:"10",rest:60},
-{sem:2,s:3,r:"8-10",rest:60},
-{sem:3,s:4,r:"6-8",rest:75},
-{sem:4,s:2,r:"12",rest:45}
-];
-
-let semana=Number(localStorage.getItem("semana")||1);
-let cfg=period.find(p=>p.sem===semana);
+const ordem = ["Peito","Costas","Anterior","Ombros","Bracos","Posterior"];
 
 let atual="Peito";
-let dados=JSON.parse(localStorage.getItem("dados")||"{}");
-let hist=JSON.parse(localStorage.getItem("hist")||"{}");
+let dados = JSON.parse(localStorage.getItem("dados")||"{}");
 
-// ===== NAV =====
-function go(t){
-document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
-document.getElementById("nav-"+t).classList.add("active");
-
-if(t==="home")home();
-if(t==="treino")treino();
-if(t==="evol")evol();
-if(t==="perf")perf();
-if(t==="cal")cal();
+// ===== CHIPS =====
+function init(){
+let html="";
+ordem.forEach(t=>{
+html+=`<div class="chip" onclick="abrir('${t}',this)">${t}</div>`;
+});
+document.getElementById("chips").innerHTML=html;
+abrir("Peito", document.querySelector(".chip"));
 }
 
-// ===== HOME =====
-function home(){
+// ===== ABRIR =====
+function abrir(nome,el){
+atual=nome;
 
-let last=Object.keys(hist).slice(-1)[0]||"-";
+document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+if(el) el.classList.add("active");
 
-document.getElementById("screen").innerHTML=`
-<div class="card">
-<div class="big">Semana ${semana}</div>
-<div>${cfg.s} séries · ${cfg.r} reps · ${cfg.rest}s</div>
-</div>
+render();
+}
 
-<div class="card">
-<div class="big">Escolher treino</div>
-<select onchange="atual=this.value" style="width:100%;padding:10px;margin-top:10px">
-${Object.keys(treinos).map(t=>`<option ${t===atual?"selected":""}>${t}</option>`)}
-</select>
-<button class="btn" onclick="go('treino')">Iniciar</button>
-</div>
+// ===== RENDER =====
+function render(){
 
-<div class="card">
-<div class="big">Último treino</div>
-<div>${last}</div>
+let treino = treinos[atual];
+let html=`<div class="card"><h2>${atual}</h2>`;
+
+treino.forEach((bloco,b)=>{
+
+html+=`<div class="exercise">`;
+html+=`<div class="tag">${bloco.tipo}</div>`;
+
+bloco.ex.forEach((ex,i)=>{
+html+=`<div>${ex}</div>`;
+});
+
+html+=renderSeries(b,3);
+html+=`</div>`;
+
+});
+
+html+=`<button class="btn" onclick="alert('Treino salvo')">Finalizar</button></div>`;
+
+document.getElementById("screen").innerHTML=html;
+}
+
+// ===== SERIES =====
+function renderSeries(b,total){
+
+let html="";
+
+for(let s=0;s<total;s++){
+
+let v=dados[atual]?.[b]?.[s]||{};
+
+html+=`
+<div class="series">
+<input value="${v.kg||""}" placeholder="kg"
+oninput="save(${b},${s},'kg',this.value)">
+
+<input value="${v.rep||""}" placeholder="rep"
+oninput="save(${b},${s},'rep',this.value)">
+
+<div class="check ${v.done?'done':''}"
+onclick="toggle(${b},${s})"></div>
 </div>
 `;
 }
 
-// ===== TREINO =====
-function treino(){
-
-let t=treinos[atual];
-let html=`<div class="card"><h2>${atual}</h2>`;
-
-t.forEach((ex,i)=>{
-html+=`<div class="exercise">
-<b>${ex}</b>
-${series(i)}
-</div>`;
-});
-
-html+=`<button class="btn" onclick="finalizar()">Finalizar</button></div>`;
-document.getElementById("screen").innerHTML=html;
-}
-
-function series(i){
-let html="";
-for(let s=0;s<cfg.s;s++){
-let v=dados[atual]?.[i]?.[s]||{};
-html+=`
-<div class="series">
-<input placeholder="kg" value="${v.kg||""}" oninput="save(${i},${s},'kg',this.value)">
-<input placeholder="rep" value="${v.rep||""}" oninput="save(${i},${s},'rep',this.value)">
-<div class="check ${v.done?'done':''}" onclick="toggle(${i},${s})"></div>
-</div>`;
-}
 return html;
 }
 
 // ===== SAVE =====
-function save(i,s,k,v){
+function save(b,s,k,v){
 dados[atual]=dados[atual]||{};
-dados[atual][i]=dados[atual][i]||{};
-dados[atual][i][s]=dados[atual][i][s]||{};
-dados[atual][i][s][k]=v;
+dados[atual][b]=dados[atual][b]||{};
+dados[atual][b][s]=dados[atual][b][s]||{};
+dados[atual][b][s][k]=v;
+
 localStorage.setItem("dados",JSON.stringify(dados));
 }
 
-// ===== TIMER =====
-let int;
-function toggle(i,s){
+// ===== TOGGLE (CORRIGIDO) =====
+function toggle(b,s){
 
-let v=dados[atual]?.[i]?.[s]||{};
-v.done=!v.done;
+dados[atual]=dados[atual]||{};
+dados[atual][b]=dados[atual][b]||{};
+dados[atual][b][s]=dados[atual][b][s]||{};
 
-dados[atual][i][s]=v;
+dados[atual][b][s].done = !dados[atual][b][s].done;
+
 localStorage.setItem("dados",JSON.stringify(dados));
 
-startTimer();
-treino();
-}
-
-function startTimer(){
-let t=cfg.rest;
-let o=document.getElementById("overlay");
-o.style.display="flex";
-o.innerText=t;
-
-clearInterval(int);
-int=setInterval(()=>{
-t--;
-o.innerText=t;
-if(t<=0){
-clearInterval(int);
-o.style.display="none";
-}
-},1000);
-}
-
-// ===== FINALIZAR =====
-function finalizar(){
-
-hist[new Date().toLocaleDateString()]=atual;
-localStorage.setItem("hist",JSON.stringify(hist));
-
-semana++;
-if(semana>4)semana=1;
-localStorage.setItem("semana",semana);
-
-alert("Treino salvo 🔥");
-}
-
-// ===== EVOL =====
-function evol(){
-document.getElementById("screen").innerHTML=`<div class="card"><canvas id="g"></canvas></div>`;
-new Chart(document.getElementById("g"),{
-type:"line",
-data:{labels:["1","2","3"],datasets:[{data:[77,78,80]}]}
-});
-}
-
-// ===== PERFORMANCE =====
-function perf(){
-
-let html=`<div class="card"><h2>Performance</h2>`;
-
-Object.keys(hist).forEach(d=>{
-html+=`<div>${d} - ${hist[d]}</div>`;
-});
-
-html+=`</div>`;
-document.getElementById("screen").innerHTML=html;
-}
-
-// ===== CALENDÁRIO =====
-function cal(){
-
-let html=`<div class="card"><h2>Calendário</h2>`;
-
-Object.keys(hist).forEach(d=>{
-html+=`<div>🟩 ${d}</div>`;
-});
-
-html+=`</div>`;
-document.getElementById("screen").innerHTML=html;
+render(); // 🔥 ESSENCIAL PRA FUNCIONAR
 }
 
 // INIT
-go("home");
+init();
 
 </script>
 
