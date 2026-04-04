@@ -3,44 +3,126 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#050505">
+<link rel="apple-touch-icon" href="icon.png">
+
 <title>Diego Training PRO</title>
 
 <style>
-body{margin:0;background:#050505;color:#fff;font-family:Arial}
+body{
+margin:0;
+background:#050505;
+color:#f0f0f0;
+font-family:-apple-system;
+}
+
 #app{max-width:520px;margin:auto}
 
-.title{color:#d4ff00;font-size:26px;padding:20px;font-weight:bold}
+/* HEADER */
+.header{
+padding:20px;
+background:linear-gradient(180deg,#0f1a00,#050505);
+}
+.title{
+font-size:26px;
+font-weight:700;
+color:#d4ff00;
+}
 
-.chips{display:flex;gap:8px;overflow:auto;padding:10px}
-.chip{background:#222;padding:10px;border-radius:20px}
-.active{background:#d4ff00;color:#000}
+/* CHIPS */
+.chips{
+display:flex;
+gap:8px;
+padding:10px;
+overflow:auto;
+}
+.chip{
+background:#1a1a1a;
+padding:10px 14px;
+border-radius:20px;
+font-size:13px;
+}
+.active{
+background:#d4ff00;
+color:#000;
+}
 
-.card{background:#111;margin:10px;padding:15px;border-radius:12px}
+/* CARD */
+.card{
+background:#0f0f0f;
+margin:10px;
+padding:14px;
+border-radius:14px;
+border:1px solid #222;
+}
 
-.exercise{margin-top:12px;padding-top:10px;border-top:1px solid #222}
+/* EXERCISE */
+.exercise{margin-top:14px}
+.tag{font-size:10px;color:#888;margin-bottom:6px}
 
-.tag{font-size:11px;background:#222;padding:4px 8px;border-radius:6px;margin-bottom:6px}
-
-.series{display:flex;gap:6px;margin-top:6px}
-input{width:55px;padding:6px;background:#000;border:1px solid #333;color:#fff}
-
+/* SERIES */
+.series{
+display:flex;
+gap:6px;
+margin-top:6px;
+align-items:center;
+}
+input{
+width:55px;
+padding:7px;
+background:#050505;
+border:1px solid #222;
+border-radius:8px;
+color:#fff;
+}
 .check{
-width:24px;height:24px;border-radius:50%;
-border:2px solid #444;
+width:26px;
+height:26px;
+border-radius:50%;
+border:2px solid #333;
 }
 .done{background:#00e676}
 
+/* BUTTON */
 .btn{
-background:#d4ff00;color:#000;padding:12px;
-border:none;border-radius:10px;width:100%;margin-top:15px;
+background:#d4ff00;
+color:#000;
+padding:14px;
+border:none;
+border-radius:12px;
+width:100%;
+font-weight:700;
+margin-top:16px;
+}
+
+/* TIMER */
+#timerOverlay{
+position:fixed;
+inset:0;
+background:#000e;
+display:none;
+align-items:center;
+justify-content:center;
+font-size:60px;
+color:#d4ff00;
+z-index:999;
 }
 </style>
 </head>
 
 <body>
 
+<div id="timerOverlay"></div>
+
 <div id="app">
+
+<div class="header">
 <div class="title">DIEGO TRAINING</div>
+</div>
 
 <div class="chips" id="chips"></div>
 <div id="screen"></div>
@@ -49,116 +131,59 @@ border:none;border-radius:10px;width:100%;margin-top:15px;
 
 <script>
 
-// ===== TREINOS 100% CORRETOS =====
+// ===== TREINOS (FIÉIS) =====
 const treinos = {
 
 Peito:[
-{tipo:"TRI-SET",ex:[
-"Supino declinado HBL",
-"Cross over",
-"Crucifixo declinado HBC"
-]},
-{tipo:"TRI-SET",ex:[
-"Supino reto HBL",
-"Supino reto HBC",
-"Crucifixo máquina"
-]},
-{tipo:"TRI-SET",ex:[
-"Supino 45 HBL",
-"Supino 45 HBC",
-"Crucifixo 45 HBC"
-]}
+{tipo:"TRI-SET",ex:["Supino declinado HBL","Cross over","Crucifixo declinado HBC"]},
+{tipo:"TRI-SET",ex:["Supino reto HBL","Supino reto HBC","Crucifixo máquina"]},
+{tipo:"TRI-SET",ex:["Supino 45 HBL","Supino 45 HBC","Crucifixo 45 HBC"]}
 ],
 
 Costas:[
-{tipo:"TRI-SET",ex:[
-"Barra fixa frente",
-"Puxada hammer",
-"Puxada frente paralela"
-]},
-{tipo:"TRI-SET",ex:[
-"Puxada por trás",
-"Puxada articulada",
-"Puxada frente paralela"
-]},
-{tipo:"TRI-SET",ex:[
-"Remada inclinada",
-"Remada unilateral HBC",
-"Remada sentada"
-]}
+{tipo:"TRI-SET",ex:["Barra fixa frente","Puxada hammer","Puxada frente paralela"]},
+{tipo:"TRI-SET",ex:["Puxada por trás","Puxada articulada","Puxada frente paralela"]},
+{tipo:"TRI-SET",ex:["Remada inclinada","Remada unilateral HBC","Remada sentada"]}
 ],
 
 Anterior:[
 {tipo:"SEQUÊNCIA",ex:[
-"Agachamento Smith",
-"Leg press 45",
-"Leg horizontal",
-"Cadeira extensora",
-"Agachamento unilateral Smith",
-"Cadeira adutora",
-"Abdominal lateral prancha"
+"Agachamento Smith","Leg press 45","Leg horizontal",
+"Cadeira extensora","Agachamento unilateral Smith",
+"Cadeira adutora","Abdominal lateral prancha"
 ]}
 ],
 
 Ombros:[
-{tipo:"TRI-SET",ex:[
-"Abdução HBC",
-"Cross posterior unilateral",
-"Abdução cotovelos"
-]},
-{tipo:"TRI-SET",ex:[
-"Desenvolvimento máquina",
-"Flexão ombro HBC",
-"Flexão cross"
-]},
-{tipo:"BI-SET",ex:[
-"Desenvolvimento Smith atrás",
-"Crucifixo inverso máquina"
-]},
-{tipo:"TRI-SET",ex:[
-"Encolhimento HBC",
-"Remada alta cross",
-"Encolhimento máquina"
-]}
+{tipo:"TRI-SET",ex:["Abdução HBC","Cross posterior unilateral","Abdução cotovelos"]},
+{tipo:"TRI-SET",ex:["Desenvolvimento máquina","Flexão ombro HBC","Flexão cross"]},
+{tipo:"BI-SET",ex:["Desenvolvimento Smith atrás","Crucifixo inverso máquina"]},
+{tipo:"TRI-SET",ex:["Encolhimento HBC","Remada alta cross","Encolhimento máquina"]}
 ],
 
 Bracos:[
-{tipo:"TRI-SET",ex:[
-"Rosca direta HBM",
-"Rosca Scott máquina",
-"Rosca alternada HBC"
-]},
-{tipo:"TRI-SET",ex:[
-"Tríceps testa HBW",
-"Tríceps pulley",
-"Tríceps corda"
-]},
-{tipo:"ISOLADO",ex:[
-"Rosca martelo"
-]}
+{tipo:"TRI-SET",ex:["Rosca direta HBM","Rosca Scott máquina","Rosca alternada HBC"]},
+{tipo:"TRI-SET",ex:["Tríceps testa HBW","Tríceps pulley","Tríceps corda"]},
+{tipo:"ISOLADO",ex:["Rosca martelo"]}
 ],
 
 Posterior:[
 {tipo:"SEQUÊNCIA",ex:[
-"Cadeira flexora",
-"Cadeira abdutora",
-"Mesa flexora",
-"Stiff",
-"Flexão joelho em pé",
-"Afundo banco",
-"Panturrilha em pé",
-"Abdominal infra"
+"Cadeira flexora","Cadeira abdutora","Mesa flexora","Stiff",
+"Flexão joelho em pé","Afundo banco",
+"Panturrilha em pé","Abdominal infra"
 ]}
 ]
 
 };
 
-const ordem = ["Peito","Costas","Anterior","Ombros","Bracos","Posterior"];
+const ordem=["Peito","Costas","Anterior","Ombros","Bracos","Posterior"];
 
 let atual="Peito";
-let dados = JSON.parse(localStorage.getItem("dados")||"{}");
+let dados=JSON.parse(localStorage.getItem("dados")||"{}");
+let hist=JSON.parse(localStorage.getItem("hist")||"{}");
 
-// ===== CHIPS =====
+// ===== INIT =====
 function init(){
 let html="";
 ordem.forEach(t=>{
@@ -171,17 +196,31 @@ abrir("Peito", document.querySelector(".chip"));
 // ===== ABRIR =====
 function abrir(nome,el){
 atual=nome;
-
 document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
 if(el) el.classList.add("active");
-
 render();
+}
+
+// ===== PR + SUGESTÃO =====
+function sugestao(nome){
+
+if(!hist[nome]) return "";
+
+let ult=hist[nome].slice(-1)[0];
+let carga=ult.kg;
+
+if(ult.rep>=10) carga+=2;
+if(ult.rep<6) carga-=2;
+
+return `<div style="font-size:11px;color:#aaa">
+${ult.kg}kg x ${ult.rep} → ${carga}kg
+</div>`;
 }
 
 // ===== RENDER =====
 function render(){
 
-let treino = treinos[atual];
+let treino=treinos[atual];
 let html=`<div class="card"><h2>${atual}</h2>`;
 
 treino.forEach((bloco,b)=>{
@@ -189,8 +228,8 @@ treino.forEach((bloco,b)=>{
 html+=`<div class="exercise">`;
 html+=`<div class="tag">${bloco.tipo}</div>`;
 
-bloco.ex.forEach((ex,i)=>{
-html+=`<div>${ex}</div>`;
+bloco.ex.forEach(ex=>{
+html+=`<div><b>${ex}</b>${sugestao(ex)}</div>`;
 });
 
 html+=renderSeries(b,3);
@@ -198,8 +237,7 @@ html+=`</div>`;
 
 });
 
-html+=`<button class="btn" onclick="alert('Treino salvo')">Finalizar</button></div>`;
-
+html+=`<button class="btn" onclick="finalizar()">Finalizar treino</button></div>`;
 document.getElementById("screen").innerHTML=html;
 }
 
@@ -213,13 +251,11 @@ for(let s=0;s<total;s++){
 let v=dados[atual]?.[b]?.[s]||{};
 
 html+=`
-<div class="series">
+<div class="series" style="${!v.done?'background:#111;padding:4px;border-radius:8px':''}">
 <input value="${v.kg||""}" placeholder="kg"
 oninput="save(${b},${s},'kg',this.value)">
-
 <input value="${v.rep||""}" placeholder="rep"
 oninput="save(${b},${s},'rep',this.value)">
-
 <div class="check ${v.done?'done':''}"
 onclick="toggle(${b},${s})"></div>
 </div>
@@ -235,22 +271,62 @@ dados[atual]=dados[atual]||{};
 dados[atual][b]=dados[atual][b]||{};
 dados[atual][b][s]=dados[atual][b][s]||{};
 dados[atual][b][s][k]=v;
-
 localStorage.setItem("dados",JSON.stringify(dados));
 }
 
-// ===== TOGGLE (CORRIGIDO) =====
+// ===== TIMER =====
+let int;
+function startTimer(){
+
+let t=60;
+let el=document.getElementById("timerOverlay");
+
+el.style.display="flex";
+el.innerText=t;
+
+clearInterval(int);
+
+int=setInterval(()=>{
+t--;
+el.innerText=t;
+
+if(t<=0){
+clearInterval(int);
+el.style.display="none";
+}
+},1000);
+}
+
+// ===== TOGGLE =====
 function toggle(b,s){
 
-dados[atual]=dados[atual]||{};
-dados[atual][b]=dados[atual][b]||{};
-dados[atual][b][s]=dados[atual][b][s]||{};
-
 dados[atual][b][s].done = !dados[atual][b][s].done;
-
 localStorage.setItem("dados",JSON.stringify(dados));
 
-render(); // 🔥 ESSENCIAL PRA FUNCIONAR
+navigator.vibrate && navigator.vibrate(50);
+
+startTimer();
+render();
+}
+
+// ===== FINALIZAR =====
+function finalizar(){
+
+treinos[atual].forEach((bloco,b)=>{
+bloco.ex.forEach(ex=>{
+let kg=dados[atual]?.[b]?.[0]?.kg;
+let rep=dados[atual]?.[b]?.[0]?.rep;
+
+if(kg && rep){
+hist[ex]=hist[ex]||[];
+hist[ex].push({kg:Number(kg),rep:Number(rep)});
+}
+});
+});
+
+localStorage.setItem("hist",JSON.stringify(hist));
+
+alert("Treino salvo + evolução 🔥");
 }
 
 // INIT
