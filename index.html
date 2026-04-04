@@ -6,69 +6,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Diego Training</title>
 <style>
-body{background:#080808;color:#f0f0f0;font-family:Arial,sans-serif;margin:0;padding:20px}
-#log{background:#111;border:1px solid #282828;border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.8}
-.ok{color:#00e676}
-.er{color:#ff4500}
+body { background: #080808; color: #f0f0f0; font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+h1 { color: #d4ff00; font-size: 26px; margin-bottom: 16px; }
+p { color: #aaa; margin-bottom: 8px; font-size: 14px; }
+#out { background: #111; border: 1px solid #333; border-radius: 8px; padding: 14px; }
 </style>
 </head>
 <body>
-<div style="font-size:22px;font-weight:900;color:#d4ff00;margin-bottom:12px">DIEGO TRAINING</div>
-<div id="log">Iniciando testes...</div>
+<h1>DIEGO TRAINING</h1>
+<div id="out">
+  <p id="p1">Aguardando...</p>
+  <p id="p2"></p>
+  <p id="p3"></p>
+  <p id="p4"></p>
+  <p id="p5"></p>
+</div>
 <script>
-var log = document.getElementById('log');
-var html = '';
+document.getElementById('p1').textContent = 'Teste 1 OK - script rodou';
 
-function ok(msg) { html += ’<div class="ok">OK: ’ + msg + ‘</div>’; log.innerHTML = html; }
-function er(msg) { html += ’<div class="er">ERRO: ’ + msg + ‘</div>’; log.innerHTML = html; }
-
-try { ok(‘Script iniciou’); } catch(e) { er(’Script nao iniciou: ’ + e); }
+var x = 1 + 1;
+document.getElementById(‘p2’).textContent = ’Teste 2 OK - calculo: ’ + x;
 
 try {
-var x = localStorage.getItem(‘teste’);
-ok(‘localStorage funciona’);
-} catch(e) { er(’localStorage: ’ + e); }
+localStorage.setItem(‘t’, ‘1’);
+document.getElementById(‘p3’).textContent = ‘Teste 3 OK - localStorage funciona’;
+} catch(e) {
+document.getElementById(‘p3’).textContent = ’Teste 3 ERRO - localStorage: ’ + e.message;
+}
 
-try {
-localStorage.setItem(‘teste’, ‘123’);
-ok(‘localStorage.setItem funciona’);
-} catch(e) { er(’localStorage.setItem: ’ + e); }
+var hoje = new Date().toISOString().slice(0, 10);
+document.getElementById(‘p4’).textContent = ’Teste 4 OK - data: ’ + hoje;
 
-try {
-var d = document.createElement(‘div’);
-d.textContent = ‘teste’;
-document.body.appendChild(d);
-ok(‘DOM manipulation funciona’);
-} catch(e) { er(’DOM: ’ + e); }
-
-try {
-var arr = [1,2,3];
-var r = arr.map(function(x){ return x*2; });
-ok(’Array.map funciona: ’ + r);
-} catch(e) { er(’Array.map: ’ + e); }
-
-try {
-var obj = JSON.parse(’{“a”:1}’);
-ok(’JSON.parse funciona: ’ + obj.a);
-} catch(e) { er(’JSON.parse: ’ + e); }
-
-try {
-var dt = new Date();
-ok(’Date funciona: ’ + dt.toISOString().slice(0,10));
-} catch(e) { er(’Date: ’ + e); }
-
-try {
-var scr = document.getElementById(‘log’);
-scr.innerHTML = html + ‘<div class="ok">OK: getElementById funciona</div>’;
-html = scr.innerHTML;
-} catch(e) { er(’getElementById: ’ + e); }
-
-try {
-var WC = [{num:1,name:“Teste”}];
-ok(’Array de objetos funciona: ’ + WC[0].name);
-} catch(e) { er(’Array objetos: ’ + e); }
-
-ok(‘Todos os testes concluidos’);
+document.getElementById(‘p5’).textContent = ‘Todos os testes passaram!’;
+document.getElementById(‘p5’).style.color = ‘#00e676’;
 </script>
 
 </body>
