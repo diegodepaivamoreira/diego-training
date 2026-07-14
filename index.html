@@ -115,6 +115,16 @@ select{background:#111;border:1px solid #282828;border-radius:8px;color:#f0f0f0;
   </div>
 </div>
 
+<!-- Modal detalhe do treino -->
+<div id="sessionModal" class="modal">
+  <div style="flex:1" onclick="closeSession()"></div>
+  <div class="modal-inner">
+    <div id="sessionTitle" style="font-size:16px;font-weight:700;color:#d4ff00;margin-bottom:14px"></div>
+    <div id="sessionContent"></div>
+    <button onclick="closeSession()" class="btn btnd" style="margin-top:10px">Fechar</button>
+  </div>
+</div>
+
 <div id="tst"></div>
 
 <script>
@@ -232,6 +242,7 @@ function getDays(){return DB.days||DEFAULT_DAYS;}
 function getDay(id){return getDays()[id];}
 function wk(){return WC[(DB.week-1)%4];}
 function tod(){return new Date().toISOString().slice(0,10);}
+function e1rm(k,r){k=parseFloat(k);r=parseInt(r);if(!k||!r)return 0;return k*(1+r/30);}
 function nextTrainingId(){for(var i=0;i<MAIN_SEQ.length;i++){if(!DB.cycle[MAIN_SEQ[i]])return MAIN_SEQ[i];}return MAIN_SEQ[0];}
 function isDoneToday(id){return !!DB.done[id+"_"+tod()];}
 function lastDoneDate(id){var p=id+"_",res=[];for(var k in DB.done){if(k.indexOf(p)===0&&DB.done[k])res.push(k.slice(p.length));}res.sort();return res.length?res[res.length-1]:null;}
@@ -420,6 +431,23 @@ function openShare(id){
 }
 function copyShare(){try{navigator.clipboard.writeText(shareText).then(function(){toast("Copiado para a area de transferencia!");});closeShare();}catch(e){toast("Selecione o texto e copie manualmente");}}
 function closeShare(){document.getElementById("shareModal").className="modal";}
+
+// Detalhe de um treino passado (reconstruido do historico de cargas por data)
+function showSession(id,date){
+  var day=getDay(id);var lines="",vol=0,any=false;
+  if(day){
+    for(var ti=0;ti<day.trisets.length;ti++){for(var ei=0;ei<day.trisets[ti].ex.length;ei++){
+      var nm=day.trisets[ti].ex[ei].n;var h=DB.hist[nm]||[];var sets=[];
+      for(var j=0;j<h.length;j++){if(h[j].date===date){sets.push(h[j].kg+"kg × "+h[j].reps);vol+=parseFloat(h[j].kg)*parseInt(h[j].reps);}}
+      if(sets.length){any=true;lines+='<div class="row"><span style="font-size:12px;color:#f0f0f0;flex:1;padding-right:8px">'+nm+'</span><span style="font-size:11px;color:#00e676;text-align:right">'+sets.join("  ·  ")+'</span></div>';}
+    }}
+  }
+  var body=any?('<div class="card" style="padding:0 12px;margin-bottom:10px">'+lines+'</div><div style="text-align:right;font-size:12px;color:#d4ff00;font-weight:700">Volume: '+Math.round(vol).toLocaleString()+'kg</div>'):'<div style="font-size:13px;color:#555;padding:10px 0">Sem cargas registradas neste treino.</div>';
+  document.getElementById("sessionTitle").textContent=(day?day.label:id)+" · "+date.slice(8)+"/"+date.slice(5,7)+"/"+date.slice(0,4);
+  document.getElementById("sessionContent").innerHTML=body;
+  document.getElementById("sessionModal").className="modal on";
+}
+function closeSession(){document.getElementById("sessionModal").className="modal";}
 
 // Nav
 var curTab=0,curDay="";
@@ -615,6 +643,15 @@ function rEvol(){
   // Histórico de carga por exercício
   var allEx=[];var days=getDays();for(var id in days){var dd=days[id];if(!dd.trisets)continue;for(var ti=0;ti<dd.trisets.length;ti++){for(var ei=0;ei<dd.trisets[ti].ex.length;ei++){var exn=dd.trisets[ti].ex[ei].n;if(allEx.indexOf(exn)<0)allEx.push(exn);}}}
   var sel=DB.selEx||allEx[0];var selHist=DB.hist[sel]||[];
+  // Forca estimada (1RM Epley)
+  var e1Str="";
+  if(selHist.length){
+    var eLast=e1rm(selHist[selHist.length-1].kg,selHist[selHist.length-1].reps);
+    var eBest=0;for(var ie=0;ie<selHist.length;ie++){var ev=e1rm(selHist[ie].kg,selHist[ie].reps);if(ev>eBest)eBest=ev;}
+    var ePrev=0,lastD=selHist[selHist.length-1].date;for(var ip=selHist.length-1;ip>=0;ip--){if(selHist[ip].date!==lastD){ePrev=e1rm(selHist[ip].kg,selHist[ip].reps);break;}}
+    var trend="";if(ePrev){var dd1=eLast-ePrev;trend=' <span style="font-size:11px;color:'+(dd1>=0?"#00e676":"#ff4500")+'">'+(dd1>=0?"▲ +":"▼ ")+dd1.toFixed(1)+'kg</span>';}
+    e1Str='<div class="row"><span style="font-size:12px;color:#555">1RM estimado atual</span><span style="font-size:14px;font-weight:700;color:#d4ff00">'+eLast.toFixed(1)+'kg'+trend+'</span></div><div class="row"><span style="font-size:12px;color:#555">Melhor 1RM estimado</span><span style="font-size:14px;font-weight:700;color:#ff9100">'+eBest.toFixed(1)+'kg</span></div>';
+  }
   var histGraph="";
   if(selHist.length>1){var hvals=selHist.map(function(x){return x.kg;});var hmn=Math.min.apply(null,hvals)-1,hmx=Math.max.apply(null,hvals)+1;var W4=300,H4=55,xs4=hvals.length>1?W4/(hvals.length-1):0,pts4="",dots4="";for(var i=0;i<hvals.length;i++){var x4=i*xs4,y4=H4-((hvals[i]-hmn)/(hmx-hmn))*H4;pts4+=(i?" ":"")+x4+","+y4;dots4+='<circle cx="'+x4+'" cy="'+y4+'" r="3.5" fill="#ff9100"/>';}histGraph='<svg viewBox="0 0 300 55" style="width:100%;height:55px;display:block"><polyline points="'+pts4+'" fill="none" stroke="#ff9100" stroke-width="2.5" stroke-linejoin="round"/>'+dots4+'</svg><div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:10px;color:#555">'+selHist[0].date.slice(5).replace("-","/")+'</span><span style="font-size:10px;color:#555">'+selHist[selHist.length-1].date.slice(5).replace("-","/")+'</span></div>';}
   var opts="";for(var i=0;i<allEx.length;i++)opts+='<option value="'+allEx[i]+'"'+(allEx[i]===sel?" selected":"")+'>'+allEx[i]+'</option>';
@@ -637,6 +674,7 @@ function rEvol(){
     +'<div class="lbl" style="margin-bottom:6px">Historico por Exercicio</div>'
     +'<div class="card cp" style="margin-bottom:10px"><select onchange="DB.selEx=this.value;save();render()">'+opts+'</select>'
     +histGraph
+    +e1Str
     +(selHist.length===0?'<div style="font-size:13px;color:#555;text-align:center;padding:10px 0">Nenhum registro ainda. Conclua series no treino.</div>':"")
     +'</div>'
     +'<div class="lbl" style="margin-bottom:6px">Registrar Peso</div>'
@@ -685,10 +723,10 @@ function rDieta(){
 function rProfile(){
   var avalAll=AVAL_BASE.concat(DB.aval||[]);var last=avalAll.length?avalAll[avalAll.length-1]:null;var lW=last?last.peso:80.4;
   var tmb=Math.round(88.36+13.4*lW+4.8*183-5.7*37);var tdee=Math.round(tmb*1.725);
-  var allDone=[],k;for(k in DB.done){if(DB.done[k]){var parts=k.split("_");var date=parts[parts.length-1];var id=parts.slice(0,-1).join("_");var dd=getDay(id);allDone.push({label:dd?dd.label:id,date:date,isCardio:dd&&dd.isCardio});}}
+  var allDone=[],k;for(k in DB.done){if(DB.done[k]){var parts=k.split("_");var date=parts[parts.length-1];var id=parts.slice(0,-1).join("_");var dd=getDay(id);allDone.push({label:dd?dd.label:id,date:date,isCardio:dd&&dd.isCardio,id:id});}}
   allDone.sort(function(a,b){return b.date>a.date?1:b.date<a.date?-1:0;});
   var logH="";if(!allDone.length)logH='<div style="padding:12px 0;font-size:13px;color:#555">Nenhum treino registrado ainda.</div>';
-  else for(var i=0;i<Math.min(allDone.length,40);i++){var x=allDone[i];logH+='<div class="row"><span style="font-size:13px;font-weight:700;color:'+(x.isCardio?"#00e5ff":"#f0f0f0")+'">'+x.label+'</span><span style="font-size:12px;color:#00e676">'+x.date.slice(8)+"/"+x.date.slice(5,7)+"/"+x.date.slice(0,4)+'</span></div>';}
+  else for(var i=0;i<Math.min(allDone.length,40);i++){var x=allDone[i];logH+='<div class="row" onclick="showSession(\''+x.id+'\',\''+x.date+'\')" style="cursor:pointer"><span style="font-size:13px;font-weight:700;color:'+(x.isCardio?"#00e5ff":"#f0f0f0")+'">'+x.label+'</span><span style="font-size:12px;color:#00e676">'+x.date.slice(8)+"/"+x.date.slice(5,7)+"/"+x.date.slice(0,4)+' ›</span></div>';}
   function tr(k,v,hi){return '<div class="row"><span style="font-size:12px;color:#555">'+k+'</span><span style="font-size:14px;font-weight:700;color:'+(hi?"#d4ff00":"#f0f0f0")+'">'+v+'</span></div>';}
   return '<div class="pg"><div class="ttl" style="margin-bottom:14px">PERFIL</div>'
     +'<div class="lbl" style="margin-bottom:6px">Log de Treinos ('+allDone.length+')</div><div class="card" style="padding:0 12px;margin-bottom:12px">'+logH+'</div>'
