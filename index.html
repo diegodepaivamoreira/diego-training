@@ -194,7 +194,7 @@ var DEFAULT_DAYS={
     {label:"Panturrilha e Core",single:true,ex:[{n:"Panturrilha Sentado",t:"3x15. Foco no soleo, amplitude total."},{n:"Abdominal Infra no Banco",t:"3x15. Joelhos dobrados."}]}
   ]},
   cardio:{id:"cardio",label:"CARDIO",short:"Card",sub:"Cardio e Abdome",isCardio:true,trisets:[
-    {label:"Cardio",single:true,ex:[{n:"Escada ou Esteira Inclinada",t:"30-40 min. Zona 2. FC 120-140 bpm."}]},
+    {label:"Cardio",single:true,ex:[{n:"Esteira Inclinada ou Escada",t:"CORTE: 30-40 min zona 2 (FC 120-140), 3-4x/sem. Em jejum ou pos-treino de forca."},{n:"HIIT (opcional)",t:"1-2x/sem: 10-15 min. 30s forte / 90s leve. Evite no mesmo dia de pernas pesado."}]},
     {label:"Abdome",single:true,ex:[
       {n:"Abdominal Supra",t:"3x20."},
       {n:"Elevacao de Pernas",t:"3x15."},
@@ -212,12 +212,14 @@ var AVAL_BASE=[
 ];
 
 var SK="dtv5";
-var DB={week:1,cycleCount:0,lastDoneId:null,sets:{},done:{},obs:{},weights:[],prs:{},hist:{},aval:[],days:null,selEx:"",earnedAch:[],maxVol:0,trainStart:null,cycle:{},progVer:0,measures:[],migratedV3:false};
+var APP_VER="2026-10-11 diario";
+var DB={week:1,cycleCount:0,lastDoneId:null,sets:{},done:{},obs:{},weights:[],prs:{},hist:{},aval:[],days:null,selEx:"",earnedAch:[],maxVol:0,trainStart:null,cycle:{},progVer:0,measures:[],migratedV3:false,goal:"cut",snap:{},setsVer:0,dietView:"today",food:{}};
+var KEYS=["week","cycleCount","lastDoneId","sets","done","obs","weights","prs","hist","aval","days","selEx","earnedAch","maxVol","trainStart","cycle","progVer","measures","migratedV3","goal","snap","setsVer","dietView","food"];
 
 function load(){
   try{
     var s=localStorage.getItem(SK);
-    if(s){var p=JSON.parse(s);var keys=["week","cycleCount","lastDoneId","sets","done","obs","weights","prs","hist","aval","days","selEx","earnedAch","maxVol","trainStart","cycle","progVer","measures","migratedV3"];for(var i=0;i<keys.length;i++){if(p[keys[i]]!==undefined)DB[keys[i]]=p[keys[i]];}
+    if(s){var p=JSON.parse(s);for(var i=0;i<KEYS.length;i++){if(p[KEYS[i]]!==undefined)DB[KEYS[i]]=p[KEYS[i]];}
       // Migracao: dados antigos nao tem "ciclo atual". Reconstrua a partir do ultimo treino feito.
       if(p.cycle===undefined){
         DB.cycle={};
@@ -226,6 +228,12 @@ function load(){
       }
       // Programa novo (v3 PPLUL): descarta treinos personalizados antigos p/ carregar o programa atualizado.
       if(DB.progVer<3){DB.days=null;DB.progVer=3;save();}
+      // Migracao v1: series de treinos ja concluidos ficavam preenchidas pra sempre. Limpa uma vez (o historico fica em DB.hist).
+      if(!DB.setsVer){
+        var allIds=MAIN_SEQ.concat(["cardio"]);
+        for(var ai=0;ai<allIds.length;ai++){if(lastDoneDate(allIds[ai])&&!isDoneToday(allIds[ai])){var pre=allIds[ai]+"_";for(var sk2 in DB.sets){if(sk2.indexOf(pre)===0)delete DB.sets[sk2];}if(DB.obs[allIds[ai]])DB.obs[allIds[ai]]="";}}
+        DB.setsVer=1;save();
+      }
     }
     // Migracao do app antigo (dtv3 -> dtv5): traz peso corporal e medidas. Roda uma vez, mesmo em instalacao nova.
     if(!DB.migratedV3){
@@ -241,7 +249,9 @@ function save(){try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}}
 function getDays(){return DB.days||DEFAULT_DAYS;}
 function getDay(id){return getDays()[id];}
 function wk(){return WC[(DB.week-1)%4];}
-function tod(){return new Date().toISOString().slice(0,10);}
+// Data local (toISOString usa UTC: depois das 21h em Brasilia cairia no dia seguinte)
+function isoD(d){var m=d.getMonth()+1,dd=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(dd<10?"0":"")+dd;}
+function tod(){return isoD(new Date());}
 function e1rm(k,r){k=parseFloat(k);r=parseInt(r);if(!k||!r)return 0;return k*(1+r/30);}
 function nextTrainingId(){for(var i=0;i<MAIN_SEQ.length;i++){if(!DB.cycle[MAIN_SEQ[i]])return MAIN_SEQ[i];}return MAIN_SEQ[0];}
 function isDoneToday(id){return !!DB.done[id+"_"+tod()];}
@@ -279,11 +289,12 @@ function calcStreak(db){
   var unique={};for(var i=0;i<doneArr.length;i++)unique[doneArr[i]]=1;
   var dates=Object.keys(unique).sort().reverse();
   if(!dates.length)return 0;
-  var streak=0,cur=new Date();
+  // dias locais (meia-noite); tolera 1 dia de descanso entre treinos (PPLUL tem folgas na semana)
+  var now0=new Date();var streak=0,cur=new Date(now0.getFullYear(),now0.getMonth(),now0.getDate());
   for(var d=0;d<dates.length;d++){
-    var dt=new Date(dates[d]);
+    var ps=dates[d].split("-");var dt=new Date(+ps[0],+ps[1]-1,+ps[2]);
     var diff=Math.round((cur-dt)/(1000*60*60*24));
-    if(diff<=1){streak++;cur=dt;}else break;
+    if(diff<=2){streak++;cur=dt;}else break;
   }
   return streak;
 }
@@ -302,18 +313,38 @@ function showAch(a){
   document.getElementById("achDesc").textContent=a.desc;
   document.getElementById("achModal").className="modal on";
 }
+// Guarda as series/obs do treino num snapshot e limpa os campos, pra proxima vez comecar zerado.
+// added = entradas gravadas em DB.hist (permite desfazer sem apagar o resto do dia).
+function archiveSession(id,added){
+  var pre=id+"_",snap={sets:{},obs:DB.obs[id]||"",added:added||[]};
+  for(var k in DB.sets){if(k.indexOf(pre)===0){snap.sets[k]=DB.sets[k];delete DB.sets[k];}}
+  DB.obs[id]="";
+  DB.snap[id+"_"+tod()]=snap;
+  var ks=Object.keys(DB.snap).sort();while(ks.length>14){delete DB.snap[ks.shift()];}
+}
+// Desfaz: devolve as series, remove so o que essa conclusao gravou no historico.
+function restoreSession(id){
+  var key=id+"_"+tod(),snap=DB.snap[key];if(!snap)return;
+  for(var k in snap.sets)DB.sets[k]=snap.sets[k];
+  DB.obs[id]=snap.obs||"";
+  var ad=snap.added||[];
+  for(var i=0;i<ad.length;i++){var h=DB.hist[ad[i].n];if(!h)continue;for(var j=h.length-1;j>=0;j--){if(h[j].date===tod()&&h[j].kg===ad[i].kg&&h[j].reps===ad[i].reps){h.splice(j,1);break;}}}
+  delete DB.snap[key];
+}
 function markMainDone(id){
   DB.done[id+"_"+tod()]=true;DB.lastDoneId=id;DB.cycle[id]=tod();
   // Salvar histórico de sets
-  var day=getDay(id);
-  for(var ti=0;ti<day.trisets.length;ti++){var ts=day.trisets[ti];for(var ei=0;ei<ts.ex.length;ei++){var ex=ts.ex[ei];for(var s=0;s<ns(ts);s++){var sv=getS(id,ti,ei,s);if(sv.kg&&sv.reps&&sv.done){saveHist(ex.n,sv.kg,sv.reps);}}}}
+  var day=getDay(id);var added=[];
+  for(var ti=0;ti<day.trisets.length;ti++){var ts=day.trisets[ti];for(var ei=0;ei<ts.ex.length;ei++){var ex=ts.ex[ei];for(var s=0;s<ns(ts);s++){var sv=getS(id,ti,ei,s);if(sv.kg&&sv.reps&&sv.done){saveHist(ex.n,sv.kg,sv.reps);added.push({n:ex.n,kg:parseFloat(sv.kg),reps:parseInt(sv.reps)});}}}}
   // Calcular volume do treino
   var vol=0;for(var ti2=0;ti2<day.trisets.length;ti2++){var ts2=day.trisets[ti2];for(var ei2=0;ei2<ts2.ex.length;ei2++){for(var s2=0;s2<ns(ts2);s2++){var sv2=getS(id,ti2,ei2,s2);if(sv2.kg&&sv2.reps)vol+=parseFloat(sv2.kg)*parseInt(sv2.reps);}}}
   if(vol>DB.maxVol)DB.maxVol=vol;
   // Verificar ciclo completo (baseado no ciclo atual, nao no historico total)
   var cycDone=true;for(var i=0;i<MAIN_SEQ.length;i++){if(!DB.cycle[MAIN_SEQ[i]]){cycDone=false;break;}}
   if(cycDone){DB.cycleCount++;DB.week=(DB.week%4)+1;DB.cycle={};setTimeout(function(){toast("Ciclo "+DB.cycleCount+" completo! Semana "+DB.week+": "+WC[(DB.week-1)%4].name);},500);}
+  archiveSession(id,added);
   DB.trainStart=null;save();checkAchievements();
+  return vol;
 }
 
 function toast(msg,color){
@@ -338,8 +369,8 @@ function beep(){
     });
   }catch(e){}
 }
-function startT(nx,prMsg){
-  clearInterval(tInt);tTot=wk().rest;tEnd=Date.now()+tTot*1000;tNx=nx||"";tDone=false;
+function startT(nx,prMsg,rs){
+  clearInterval(tInt);tTot=rs||wk().rest;tEnd=Date.now()+tTot*1000;tNx=nx||"";tDone=false;
   document.getElementById("tmr").style.display="flex";
   document.getElementById("tgo").textContent="";
   document.getElementById("tnum").style.color="#d4ff00";
@@ -408,6 +439,9 @@ function closeEdit(){document.getElementById("editModal").className="modal";}
 var shareText="";
 function openShare(id){
   var day=getDay(id);var W=wk();var vol=0;var lines=[];
+  // treino ja concluido hoje: as series foram arquivadas no snapshot
+  var snapD=isDoneToday(id)&&DB.snap[id+"_"+tod()];
+  function gs(ti,ei,s){if(snapD)return snapD.sets[sk(id,ti,ei,s)]||{kg:"",reps:"",done:false};return getS(id,ti,ei,s);}
   lines.push("🏋️ TREINO: "+day.label);
   lines.push("📅 "+new Date().toLocaleDateString("pt-BR"));
   lines.push("⚙️ "+W.name+" · "+W.series+"x"+W.reps+" · "+W.rest+"s descanso");
@@ -416,7 +450,7 @@ function openShare(id){
     var ts=day.trisets[ti];lines.push("[ "+ts.label+" ]");
     for(var ei=0;ei<ts.ex.length;ei++){
       var ex=ts.ex[ei];var exLine=ex.n+": ";var sets=[];
-      for(var s=0;s<ns(ts);s++){var sv=getS(id,ti,ei,s);if(sv.kg&&sv.reps){sets.push(sv.kg+"kg×"+sv.reps);vol+=parseFloat(sv.kg)*parseInt(sv.reps);}}
+      for(var s=0;s<ns(ts);s++){var sv=gs(ti,ei,s);if(sv.kg&&sv.reps){sets.push(sv.kg+"kg×"+sv.reps);vol+=parseFloat(sv.kg)*parseInt(sv.reps);}}
       if(sets.length)lines.push("  "+exLine+sets.join(" | "));
     }
     lines.push("");
@@ -433,15 +467,19 @@ function copyShare(){try{navigator.clipboard.writeText(shareText).then(function(
 function closeShare(){document.getElementById("shareModal").className="modal";}
 
 // Detalhe de um treino passado (reconstruido do historico de cargas por data)
-function showSession(id,date){
-  var day=getDay(id);var lines="",vol=0,any=false;
+function sessionData(id,date){
+  var day=getDay(id);var lines="",vol=0,any=false,count=0;
   if(day){
     for(var ti=0;ti<day.trisets.length;ti++){for(var ei=0;ei<day.trisets[ti].ex.length;ei++){
       var nm=day.trisets[ti].ex[ei].n;var h=DB.hist[nm]||[];var sets=[];
-      for(var j=0;j<h.length;j++){if(h[j].date===date){sets.push(h[j].kg+"kg × "+h[j].reps);vol+=parseFloat(h[j].kg)*parseInt(h[j].reps);}}
+      for(var j=0;j<h.length;j++){if(h[j].date===date){sets.push(h[j].kg+"kg × "+h[j].reps);vol+=parseFloat(h[j].kg)*parseInt(h[j].reps);count++;}}
       if(sets.length){any=true;lines+='<div class="row"><span style="font-size:12px;color:#f0f0f0;flex:1;padding-right:8px">'+nm+'</span><span style="font-size:11px;color:#00e676;text-align:right">'+sets.join("  ·  ")+'</span></div>';}
     }}
   }
+  return {day:day,lines:lines,vol:vol,any:any,count:count};
+}
+function showSession(id,date){
+  var sd=sessionData(id,date);var day=sd.day,vol=sd.vol,lines=sd.lines,any=sd.any;
   var body=any?('<div class="card" style="padding:0 12px;margin-bottom:10px">'+lines+'</div><div style="text-align:right;font-size:12px;color:#d4ff00;font-weight:700">Volume: '+Math.round(vol).toLocaleString()+'kg</div>'):'<div style="font-size:13px;color:#555;padding:10px 0">Sem cargas registradas neste treino.</div>';
   document.getElementById("sessionTitle").textContent=(day?day.label:id)+" · "+date.slice(8)+"/"+date.slice(5,7)+"/"+date.slice(0,4);
   document.getElementById("sessionContent").innerHTML=body;
@@ -481,6 +519,20 @@ function rDash(){
       +'<span style="font-size:8px;color:'+(isNext?"#d4ff00":isDone?"#00e676":"#555")+'">'+(cd?cd.slice(5).replace("-","/"):isNext?"PROX":"--")+'</span></div>';
   }
   var cardioLd=lastDoneDate("cardio");
+  // Cardio na semana (ultimos 7 dias) p/ o modo corte
+  var cardioWk=0,ccut=new Date();ccut.setDate(ccut.getDate()-6);var ccs=isoD(ccut);
+  for(var ck in DB.done){if(DB.done[ck]&&ck.indexOf("cardio_")===0&&ck.slice(7)>=ccs)cardioWk++;}
+  var cortePct=Math.min(100,Math.round(cardioWk/4*100));
+  var corteCard=(DB.goal==="cut"?'<div class="card" style="border-color:#ff9100"><div class="cp">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div class="lbl" style="color:#ff9100">🔥 MODO CORTE</div><div style="font-size:11px;color:#ff9100;font-weight:700">Cardio '+cardioWk+'/4 esta semana</div></div>'
+    +'<div style="height:5px;background:#1a1a1a;border-radius:3px;margin-bottom:9px"><div style="height:100%;background:#ff9100;width:'+cortePct+'%;border-radius:3px"></div></div>'
+    +'<div style="font-size:11px;color:#aaa;line-height:1.7">• Dieta em <b style="color:#f0f0f0">deficit</b> — o motor do corte<br>• <b style="color:#f0f0f0">Mantenha os compostos pesados</b> — segura o musculo<br>• <b style="color:#f0f0f0">Cardio 3-4x</b>: 30-40min zona 2 + 1-2x HIIT<br>• <b style="color:#f0f0f0">Proteina alta</b> e descanso curto (45-60s) nos acessorios</div>'
+    +'</div></div>':"");
+  var TGd=calcTargets(),FTd=foodTotals(),remPd=Math.round(TGd.p-FTd.p),kPct=Math.min(100,Math.round(FTd.k/TGd.kcal*100));
+  var dietCard='<div class="card" onclick="DB.dietView=\'today\';go(4)" style="cursor:pointer"><div class="cp">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div class="lbl" style="color:#00e676">ALIMENTACAO HOJE</div><div style="font-size:11px;color:'+(FTd.k>TGd.kcal?"#ff4500":"#aaa")+'">'+Math.round(FTd.k)+' / '+TGd.kcal+' kcal</div></div>'
+    +'<div style="height:5px;background:#1a1a1a;border-radius:3px;margin-bottom:7px"><div style="height:100%;width:'+kPct+'%;background:'+(FTd.k>TGd.kcal?"#ff4500":"#00e676")+';border-radius:3px"></div></div>'
+    +'<div style="font-size:12px;color:#aaa">Proteina '+Math.round(FTd.p)+'/'+TGd.p+'g · '+(remPd>0?'faltam <b style="color:#f0f0f0">'+remPd+'g</b>':'<b style="color:#00e676">meta batida</b>')+'</div></div></div>';
   return '<div style="padding:16px 14px 10px;background:linear-gradient(160deg,#0f1a00,#080808 70%)">'
     +'<div style="display:flex;align-items:center;justify-content:space-between">'
     +'<div><div style="font-size:24px;font-weight:900;letter-spacing:3px;color:#d4ff00;line-height:1.1">DIEGO TRAINING</div>'
@@ -490,6 +542,7 @@ function rDash(){
     +'<div style="padding:8px 14px 0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div class="lbl">Progresso do ciclo</div><div style="font-size:11px;color:#d4ff00;font-weight:700">'+cycDone+'/'+MAIN_SEQ.length+'</div></div><div style="height:4px;background:#1a1a1a;border-radius:2px"><div style="height:100%;background:#d4ff00;width:'+cycPct+'%;border-radius:2px"></div></div></div>'
     +'<div style="padding:8px 14px 0"><div class="lbl" style="margin-bottom:7px">Sequencia</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:5px">'+chips+'</div></div>'
     +'<div class="pg">'
+    +corteCard+dietCard
     +'<div class="card" style="border-color:#d4ff00"><div class="cp" style="display:flex;align-items:flex-start;justify-content:space-between">'
     +'<div><div class="lbl">Proximo</div><div style="font-size:22px;font-weight:900;color:#f0f0f0;margin-top:1px">'+day.label+'</div><div style="font-size:12px;color:#aaa;margin-top:1px">'+day.sub+'</div>'+(lastDoneDate(nxt)?'<div style="font-size:10px;color:#555;margin-top:2px">Ultimo: '+lastDoneDate(nxt).slice(5).replace("-","/")+'</div>':"")+'</div>'
     +'<div style="background:#d4ff00;color:#000;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px">'+W.series+'x'+W.reps+'</div></div>'
@@ -532,10 +585,10 @@ function rTreino(){
         var regTxt="";if(sv.kg&&sv.reps&&lastH&&sv.done){if(parseFloat(sv.kg)<lastH.kg)regTxt='<span class="reg">↓ carga</span>';}
         sH+='<div style="display:inline-flex;align-items:center;gap:4px;background:#0a0a0a;border:1px solid '+(sv.done?"#00e676":"#282828")+';border-radius:8px;padding:5px 6px;margin:2px">'
           +'<span style="font-size:9px;color:#555;font-weight:700;min-width:14px">S'+(s+1)+'</span>'
-          +'<input type="number" inputmode="decimal" placeholder="kg" value="'+(sv.kg||lastH?""+(sv.kg||""):"")+'" onchange="setS(\''+curDay+'\','+ti+','+ei+','+s+',\'kg\',this.value)">'
+          +'<input type="number" inputmode="decimal" placeholder="'+(lastH?lastH.kg:"kg")+'" value="'+(sv.kg||"")+'" onchange="setS(\''+curDay+'\','+ti+','+ei+','+s+',\'kg\',this.value)">'
           +'<span style="font-size:9px;color:#333">x</span>'
-          +'<input type="number" inputmode="numeric" placeholder="rep" value="'+(sv.reps||"")+'" onchange="setS(\''+curDay+'\','+ti+','+ei+','+s+',\'reps\',this.value)">'
-          +'<button class="ck'+(sv.done?" ckon":"")+'" onclick="togS(\''+curDay+'\','+ti+','+ei+','+s+',\''+nxS+'\',\''+ex.n.replace(/'/g,"")+'\')">v</button>'
+          +'<input type="number" inputmode="numeric" placeholder="'+(lastH?lastH.reps:"rep")+'" value="'+(sv.reps||"")+'" onchange="setS(\''+curDay+'\','+ti+','+ei+','+s+',\'reps\',this.value)">'
+          +'<button class="ck'+(sv.done?" ckon":"")+'" onclick="togS(\''+curDay+'\','+ti+','+ei+','+s+',\''+nxS+'\',\''+ex.n.replace(/'/g,"")+'\','+restFor(ts)+')">v</button>'
           +regTxt+'</div>';
       }
       var prTxt=pr?'<span style="font-size:10px;color:#ff9100;margin-left:4px">PR: '+pr.kg+'kg×'+pr.reps+'</span>':"";
@@ -553,27 +606,44 @@ function rTreino(){
   }
   // Volume total
   var totalVol=0;for(var ti2=0;ti2<day.trisets.length;ti2++){var ts2=day.trisets[ti2];for(var ei2=0;ei2<ts2.ex.length;ei2++){for(var s3=0;s3<ns(ts2);s3++){var sv3=getS(curDay,ti2,ei2,s3);if(sv3.kg&&sv3.reps)totalVol+=parseFloat(sv3.kg)*parseInt(sv3.reps);}}}
-  return '<div style="padding:10px 14px 6px;background:#080808;border-bottom:1px solid #1a1a1a;position:sticky;top:0;z-index:10">'
+  var head='<div style="padding:10px 14px 6px;background:#080808;border-bottom:1px solid #1a1a1a;position:sticky;top:0;z-index:10">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">'
-    +'<div style="display:flex;align-items:center"><div style="font-size:20px;font-weight:900;letter-spacing:2px;color:#d4ff00">'+day.label+'</div>'+timeStr+'</div>'
+    +'<div style="display:flex;align-items:center"><div style="font-size:20px;font-weight:900;letter-spacing:2px;color:#d4ff00">'+day.label+'</div>'+(doneToday?"":timeStr)+'</div>'
     +'<button onclick="openShare(\''+curDay+'\')" style="background:#1a1a1a;border:1px solid #282828;border-radius:8px;color:#aaa;font-size:11px;padding:5px 10px;cursor:pointer;font-family:Arial">Compartilhar</button></div>'
-    +'<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px">'+tabs+'</div></div>'
+    +'<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px">'+tabs+'</div></div>';
+  if(doneToday){
+    var sd=sessionData(curDay,tod());
+    return head+'<div class="pg"><div class="card" style="border-color:#00e676"><div class="cp">'
+      +'<div style="font-size:18px;font-weight:900;color:#00e676;margin-bottom:4px">✓ Treino concluido hoje</div>'
+      +'<div style="font-size:12px;color:#aaa">'+(sd.any?'Volume '+Math.round(sd.vol).toLocaleString()+'kg · '+sd.count+' series registradas':'Sem cargas registradas.')+'</div></div></div>'
+      +(sd.any?'<button onclick="showSession(\''+curDay+'\',\''+tod()+'\')" class="btn btncyan">Ver detalhes do treino</button>':"")
+      +'<button onclick="togDone(\''+curDay+'\')" class="btn btnd">Desfazer conclusao (restaura as series)</button></div>';
+  }
+  return head
     +'<div class="pg">'+lastB
     +(totalVol>0?'<div style="background:#1a1a1a;border:1px solid #282828;border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span class="lbl">Volume do Treino</span><span style="font-size:16px;font-weight:900;color:#d4ff00">'+totalVol.toLocaleString()+'kg</span></div>':"")
     +body
     +'<div style="margin-top:10px"><div class="lbl" style="margin-bottom:4px">Observacoes</div><textarea onchange="DB.obs[\''+curDay+'\']=this.value;save()" placeholder="Cargas, sensacoes, PR...">'+( DB.obs[curDay]||"")+'</textarea></div>'
-    +'<button onclick="togDone(\''+curDay+'\')" class="btn'+(doneToday?" btng":"")+'">'+(doneToday?"Concluido - toque para desfazer":"Marcar como Concluido")+'</button></div>';
+    +'<button onclick="togDone(\''+curDay+'\')" class="btn">Marcar como Concluido</button></div>';
 }
 
-function togS(d,ti,ei,si,nx,exName){
+// Composto pesado precisa de descanso longo; o resto segue a periodizacao da semana
+function restFor(ts){return ts&&ts.label==="Composto Pesado"?150:wk().rest;}
+function togS(d,ti,ei,si,nx,exName,rs){
   var sv=getS(d,ti,ei,si);var nv=!sv.done;setS(d,ti,ei,si,"done",nv);
-  if(nv){var s2=getS(d,ti,ei,si);var isPR=checkPR(exName,s2.kg,s2.reps);startT(nx,isPR?"🏆 PR! "+exName:"");}
+  if(nv){var s2=getS(d,ti,ei,si);var isPR=checkPR(exName,s2.kg,s2.reps);startT(nx,isPR?"🏆 PR! "+exName:"",rs);}
   render();
 }
 function togDone(id){
   var nv=!isDoneToday(id);
-  if(nv){if(MAIN_SEQ.indexOf(id)>=0)markMainDone(id);else{DB.done[id+"_"+tod()]=true;save();}toast("Treino concluido! Salvo.");}
-  else{DB.done[id+"_"+tod()]=false;if(DB.cycle[id])delete DB.cycle[id];save();}
+  if(nv){
+    var vol=0;
+    if(MAIN_SEQ.indexOf(id)>=0)vol=markMainDone(id)||0;
+    else{DB.done[id+"_"+tod()]=true;archiveSession(id,[]);save();}
+    toast("Treino concluido!"+(vol?" Volume "+Math.round(vol).toLocaleString()+"kg":""));
+    curDay="";go(0);return;
+  }
+  else{DB.done[id+"_"+tod()]=false;if(DB.cycle[id])delete DB.cycle[id];restoreSession(id);save();toast("Conclusao desfeita. Series restauradas.");}
   render();
 }
 
@@ -610,7 +680,7 @@ function rAgenda(){
   // Streak
   var streak=calcStreak(DB);
   // Volume da semana (ultimos 7 dias): series feitas por treino
-  var cutoff=new Date();cutoff.setDate(cutoff.getDate()-6);var cs=cutoff.toISOString().slice(0,10);
+  var cutoff=new Date();cutoff.setDate(cutoff.getDate()-6);var cs=isoD(cutoff);
   var exDay={},dsv=getDays();
   for(var vi=0;vi<MAIN_SEQ.length;vi++){var vd=dsv[MAIN_SEQ[vi]];if(!vd)continue;for(var vti=0;vti<vd.trisets.length;vti++){for(var vei=0;vei<vd.trisets[vti].ex.length;vei++){var vnm=vd.trisets[vti].ex[vei].n;if(exDay[vnm]===undefined)exDay[vnm]=vd.label;}}}
   var volTot=0,volBy={};
@@ -700,7 +770,182 @@ function saveAval(){
 }
 
 // ── DIETA ──
+// ── DIETA: plano simples de corte, so com os alimentos que o Diego come ──
+// valores por 100g (pesados prontos/cozidos; goma de tapioca pesada seca). Aproximados (TACO/USDA).
+var FOODS={
+  arroz:{k:128,p:2.5,c:28.1,g:0.2},
+  ovo:{k:146,p:13.3,c:0.6,g:9.5},
+  moida:{k:219,p:35.9,c:0,g:7.3},
+  frango:{k:159,p:32,c:0,g:2.5},
+  sobrecoxa:{k:205,p:26,c:0,g:10.5},
+  goma:{k:358,p:0.2,c:88.7,g:0},
+  pao:{k:300,p:8,c:58.6,g:3.1},
+  azeite:{k:884,p:0,c:0,g:100}
+};
+var DIET_CUT=[
+  {h:"09:00",n:"Cafe da manha",it:[["ovo",150,"3 ovos (cozidos ou mexidos)"],["pao",50,"1 pao frances"]],alt:"Troca: crepioca de 3 ovos + 30g de goma de tapioca (mesmas calorias)"},
+  {h:"13:00",n:"Almoco",it:[["arroz",180,"Arroz branco cozido: 180g (~7 col. sopa)"],["moida",150,"Carne moida magra (patinho) refogada: 150g"],["azeite",5,"Azeite: 1 col. cha"]],extra:"Salada e legumes a vontade"},
+  {h:"17:00",n:"Pre-treino",it:[["goma",40,"Tapioca: 40g de goma seca (~3 col. sopa)"],["frango",150,"Frango grelhado desfiado de recheio: 150g"]]},
+  {h:"20:30",n:"Jantar (pos-treino)",it:[["arroz",180,"Arroz branco cozido: 180g (~7 col. sopa)"],["sobrecoxa",170,"File de sobrecoxa grelhado sem pele: 170g"],["azeite",5,"Azeite: 1 col. cha"]],extra:"Salada e legumes a vontade"},
+  {h:"22:30",n:"Ceia",it:[["ovo",150,"3 ovos (cozidos ou mexidos)"],["pao",50,"1 pao frances"]],alt:"Troca: crepioca de 3 ovos + 30g de goma de tapioca"}
+];
+function mealMacros(it){var t={k:0,p:0,c:0,g:0};for(var i=0;i<it.length;i++){var f=FOODS[it[i][0]],q=it[i][1]/100;t.k+=f.k*q;t.p+=f.p*q;t.c+=f.c*q;t.g+=f.g*q;}return t;}
+function setDiet(v){DB.dietView=v;save();render();}
+function dietToggle(){
+  var v=DB.dietView;var isCut=v==="cut",isPrev=v==="prev",isToday=!isCut&&!isPrev;
+  return '<div style="display:flex;gap:6px;margin-bottom:12px">'
+    +'<button onclick="setDiet(\'today\')" class="tab-btn'+(isToday?" on":"")+'" style="flex:1">Hoje</button>'
+    +'<button onclick="setDiet(\'cut\')" class="tab-btn'+(isCut?" on":"")+'" style="flex:1">Plano corte</button>'
+    +'<button onclick="setDiet(\'prev\')" class="tab-btn'+(isPrev?" on":"")+'" style="flex:1">Plano nutri</button></div>';
+}
+
+// ── METAS DO DIA (Perfil e diario usam o mesmo calculo) ──
+function calcTargets(){
+  var avalAll=AVAL_BASE.concat(DB.aval||[]);var last=avalAll.length?avalAll[avalAll.length-1]:null;
+  var lwLog=DB.weights.length?DB.weights[DB.weights.length-1].val:null;var w=lwLog||(last?last.peso:80.4);
+  // Mifflin-St Jeor x 1.5 (musculacao 5x/sem). A formula anterior (x1.725) superestimava o gasto.
+  var tmb=Math.round(10*w+6.25*183-5*37+5);var tdee=Math.round(tmb*1.5);
+  var goalMap={cut:{lbl:"Meta Corte (-500)",kcal:tdee-500,pro:2.2},manut:{lbl:"Meta Manutencao",kcal:tdee,pro:2.0},bulk:{lbl:"Meta Bulk (+300)",kcal:tdee+300,pro:1.8}};
+  var gg=goalMap[DB.goal]||goalMap.cut;
+  var p=Math.round(w*gg.pro),g=Math.round(w*0.8),c=Math.max(0,Math.round((gg.kcal-p*4-g*9)/4));
+  return {w:w,logged:!!lwLog,tmb:tmb,tdee:tdee,gg:gg,kcal:gg.kcal,p:p,c:c,g:g};
+}
+
+// ── DIARIO ALIMENTAR: o que voce comeu hoje, por refeicao ──
+var SLOTS=[{id:"cafe",n:"Cafe da manha",h:"09:00"},{id:"almoco",n:"Almoco",h:"13:00"},{id:"pre",n:"Pre-treino",h:"17:00"},{id:"jantar",n:"Jantar",h:"20:30"},{id:"ceia",n:"Ceia",h:"22:30"},{id:"outro",n:"Extras",h:"--"}];
+var FOODCAT=[
+  {id:"ovo",n:"Ovo",un:true,ug:50,def:3,ul:"ovo(s)"},
+  {id:"pao",n:"Pao frances",un:true,ug:50,def:1,ul:"pao(es)"},
+  {id:"arroz",n:"Arroz branco cozido",def:180,ul:"g"},
+  {id:"moida",n:"Carne moida (cozida)",def:150,ul:"g"},
+  {id:"frango",n:"Frango grelhado",def:150,ul:"g"},
+  {id:"sobrecoxa",n:"File de sobrecoxa grelhado",def:170,ul:"g"},
+  {id:"goma",n:"Tapioca (goma seca)",def:40,ul:"g"},
+  {id:"crepioca",n:"Crepioca (2 ovos + 30g goma)",comp:[["ovo",100],["goma",30]],def:1,ul:"crepioca(s)"},
+  {id:"azeite",n:"Azeite",def:5,ul:"g"},
+  {id:"manual",n:"Outro (digitar macros)",manual:true,def:1}
+];
+var fSlot="",fSel="ovo",fQty=3;
+function findCat(id){for(var i=0;i<FOODCAT.length;i++)if(FOODCAT[i].id===id)return FOODCAT[i];return FOODCAT[0];}
+function foodMacros(cat,q){
+  var t={k:0,p:0,c:0,g:0},i,f,r;
+  if(cat.comp){for(i=0;i<cat.comp.length;i++){f=FOODS[cat.comp[i][0]];r=cat.comp[i][1]*q/100;t.k+=f.k*r;t.p+=f.p*r;t.c+=f.c*r;t.g+=f.g*r;}}
+  else{f=FOODS[cat.id];r=(cat.un?q*cat.ug:q)/100;t.k=f.k*r;t.p=f.p*r;t.c=f.c*r;t.g=f.g*r;}
+  return t;
+}
+function foodLabel(cat,q){return (cat.un||cat.comp)?(q+"x "+cat.n):(q+"g "+cat.n);}
+function curSlot(){if(fSlot)return fSlot;var d=new Date(),h=d.getHours()+d.getMinutes()/60;return h<10.5?"cafe":h<15?"almoco":h<18.5?"pre":h<21.5?"jantar":"ceia";}
+function dayFood(){return DB.food[tod()]||[];}
+function foodTotals(){var t={k:0,p:0,c:0,g:0},a=dayFood();for(var i=0;i<a.length;i++){t.k+=a[i].k;t.p+=a[i].p;t.c+=a[i].c;t.g+=a[i].g;}return t;}
+function pushFood(slot,label,m){
+  var d=tod();if(!DB.food[d])DB.food[d]=[];
+  DB.food[d].push({id:Date.now()+"-"+Math.floor(Math.random()*1e6),s:slot,l:label,k:Math.round(m.k*10)/10,p:Math.round(m.p*10)/10,c:Math.round(m.c*10)/10,g:Math.round(m.g*10)/10});
+  var ks=Object.keys(DB.food).sort();while(ks.length>45)delete DB.food[ks.shift()];
+}
+function addFood(){
+  var cat=findCat(fSel);var slot=curSlot();
+  if(cat.manual){
+    var nm=(document.getElementById("fm_n").value||"").trim();
+    var m={k:parseFloat(document.getElementById("fm_k").value)||0,p:parseFloat(document.getElementById("fm_p").value)||0,c:parseFloat(document.getElementById("fm_c").value)||0,g:parseFloat(document.getElementById("fm_g").value)||0};
+    if(!nm){toast("Digite o nome do alimento","#ff9100");return;}
+    if(!m.k&&!m.p&&!m.c&&!m.g){toast("Digite ao menos as calorias","#ff9100");return;}
+    pushFood(slot,nm,m);
+  }else{
+    var q=parseFloat(fQty);if(!q||q<=0){toast("Digite a quantidade","#ff9100");return;}
+    pushFood(slot,foodLabel(cat,q),foodMacros(cat,q));
+  }
+  save();toast("Adicionado");render();
+}
+function addPlanMeal(i){
+  var m=DIET_CUT[i];if(!m)return;var slot=SLOTS[i].id;
+  for(var j=0;j<m.it.length;j++){var cat=findCat(m.it[j][0]);var q=cat.un?m.it[j][1]/cat.ug:m.it[j][1];pushFood(slot,foodLabel(cat,q),foodMacros(cat,q));}
+  save();toast("Refeicao do plano registrada");render();
+}
+function delFood(id){var d=tod();DB.food[d]=(DB.food[d]||[]).filter(function(e){return e.id!==id;});save();render();}
+function pickSlot(id){fSlot=id;render();}
+function foodPrev(){var el=document.getElementById("fprev");if(!el)return;var cat=findCat(fSel);if(cat.manual){el.textContent="";return;}var q=parseFloat(fQty)||0;var m=foodMacros(cat,q);el.textContent="= "+Math.round(m.k)+" kcal · P "+Math.round(m.p)+"g · C "+Math.round(m.c)+"g · G "+Math.round(m.g)+"g";}
+function onFoodSel(v){fSel=v;fQty=findCat(v).def||1;render();}
+function rFoodToday(){
+  var TG=calcTargets(),FT=foodTotals(),day=dayFood(),slotNow=curSlot();
+  function row(lbl,v,t,unit,color,goodOver){
+    var pct=t>0?Math.min(100,Math.round(v/t*100)):0,over=v>t,left=Math.round(t-v);
+    var col=over?(goodOver?"#00e676":"#ff4500"):(pct>=90?"#ff9100":color);
+    var txt=over?(goodOver?"meta batida ✓":"passou "+(-left)+unit):"faltam "+left+unit;
+    return '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px"><span style="font-size:12px;font-weight:700;color:#f0f0f0">'+lbl+'</span><span style="font-size:11px;color:#aaa">'+Math.round(v)+' / '+t+unit+' · <b style="color:'+col+'">'+txt+'</b></span></div><div style="height:6px;background:#1a1a1a;border-radius:3px"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:3px"></div></div></div>';
+  }
+  // resumo em linguagem direta
+  var remP=TG.p-FT.p,remC=TG.c-FT.c,remK=TG.kcal-FT.k,msgs=[];
+  if(!day.length)msgs.push('Registre o que comer. Aqui voce ve quanto falta de proteina e carbo.');
+  else{
+    if(remK<0)msgs.push('<b style="color:#ff4500">Passou '+Math.round(-remK)+' kcal do alvo.</b> Segura a onda: nas proximas refeicoes so proteina magra e salada.');
+    if(remP>5)msgs.push('Faltam <b style="color:#00e676">'+Math.round(remP)+'g de proteina</b>'+(remK>0?' (≈ '+Math.round(remP/32*100)+'g de frango grelhado, '+Math.round(remP/32*159)+' kcal)':'')+'.');
+    else msgs.push('<b style="color:#00e676">Proteina do dia fechada ✓</b>');
+    if(remC>5&&remK>0)msgs.push('Ainda cabem <b style="color:#d4ff00">'+Math.round(remC)+'g de carbo</b>.');
+    else if(remC<=5)msgs.push('<b style="color:#ff9100">Carbo do dia no limite'+(remC<-5?' ('+Math.round(-remC)+'g acima)':'')+'.</b> Evite mais arroz, pao ou tapioca hoje.');
+    if(FT.g>TG.g)msgs.push('<span style="color:#ff9100">Gordura acima do alvo em '+Math.round(FT.g-TG.g)+'g.</span>');
+  }
+  var warnW=TG.logged?"":'<div style="font-size:11px;color:#ff9100;margin-bottom:8px">Usando '+TG.w+'kg (peso antigo). Registre seu peso atual na aba Evolucao pra metas corretas.</div>';
+  var top='<div class="card cp" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="lbl">Hoje · '+tod().slice(8)+'/'+tod().slice(5,7)+'</div><div style="font-size:11px;color:#555">'+TG.gg.lbl+'</div></div>'+warnW
+    +row("Calorias",FT.k,TG.kcal," kcal","#f0f0f0",false)+row("Proteina",FT.p,TG.p,"g","#00e676",true)+row("Carbo",FT.c,TG.c,"g","#d4ff00",false)+row("Gordura",FT.g,TG.g,"g","#ff9100",false)
+    +'<div style="font-size:12px;color:#aaa;line-height:1.7;margin-top:4px">'+msgs.join('<br>')+'</div></div>';
+  // formulario de registro
+  var cat=findCat(fSel),chips="",opts="";
+  for(var i=0;i<SLOTS.length;i++)chips+='<button onclick="pickSlot(\''+SLOTS[i].id+'\')" class="tab-btn'+(SLOTS[i].id===slotNow?" on":"")+'">'+SLOTS[i].n+'</button>';
+  for(var j=0;j<FOODCAT.length;j++)opts+='<option value="'+FOODCAT[j].id+'"'+(FOODCAT[j].id===fSel?" selected":"")+'>'+FOODCAT[j].n+'</option>';
+  var qtyH;
+  if(cat.manual){
+    qtyH='<input type="text" id="fm_n" placeholder="Nome (ex: whey, banana)">'
+      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px"><input type="number" inputmode="decimal" id="fm_k" placeholder="kcal" style="width:100%"><input type="number" inputmode="decimal" id="fm_p" placeholder="prot g" style="width:100%"><input type="number" inputmode="decimal" id="fm_c" placeholder="carbo g" style="width:100%"><input type="number" inputmode="decimal" id="fm_g" placeholder="gord g" style="width:100%"></div>';
+  }else{
+    qtyH='<div style="display:flex;align-items:center;gap:8px"><input type="number" inputmode="decimal" id="fq" value="'+fQty+'" oninput="fQty=this.value;foodPrev()" style="width:90px;font-size:16px;padding:8px"><span style="font-size:13px;color:#aaa">'+cat.ul+'</span></div>'
+      +'<div id="fprev" style="font-size:12px;color:#00e5ff;margin-top:6px">'+(function(){var q=parseFloat(fQty)||0,m=foodMacros(cat,q);return "= "+Math.round(m.k)+" kcal · P "+Math.round(m.p)+"g · C "+Math.round(m.c)+"g · G "+Math.round(m.g)+"g";})()+'</div>';
+  }
+  var form='<div class="card cp" style="margin-bottom:12px"><div class="lbl" style="margin-bottom:6px">Registrar o que comi</div>'
+    +'<div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px">'+chips+'</div>'
+    +'<select onchange="onFoodSel(this.value)">'+opts+'</select>'+qtyH
+    +'<button onclick="addFood()" class="btn">Adicionar em '+(function(){for(var s=0;s<SLOTS.length;s++)if(SLOTS[s].id===slotNow)return SLOTS[s].n;return "";})()+'</button></div>';
+  // refeicoes do dia
+  var meals="";
+  for(var si=0;si<SLOTS.length;si++){
+    var S=SLOTS[si],ents=[];for(var ei=0;ei<day.length;ei++)if(day[ei].s===S.id)ents.push(day[ei]);
+    if(S.id==="outro"&&!ents.length)continue;
+    var st={k:0,p:0},rows="";
+    for(var xi=0;xi<ents.length;xi++){var e=ents[xi];st.k+=e.k;st.p+=e.p;rows+='<div class="row"><div style="flex:1;padding-right:8px"><div style="font-size:12px;color:#f0f0f0">'+e.l+'</div><div style="font-size:10px;color:#555">'+Math.round(e.k)+' kcal · P '+Math.round(e.p)+' · C '+Math.round(e.c)+' · G '+Math.round(e.g)+'</div></div><button onclick="delFood(\''+e.id+'\')" style="background:none;border:1px solid #ff4500;border-radius:4px;color:#ff4500;font-size:10px;padding:2px 7px;cursor:pointer;font-family:Arial">x</button></div>';}
+    var planBtn="";
+    if(si<DIET_CUT.length&&!ents.length){var pm=mealMacros(DIET_CUT[si].it);planBtn='<button onclick="addPlanMeal('+si+')" style="background:#0a1a0a;border:1px solid #00e676;border-radius:8px;color:#00e676;font-size:12px;font-weight:700;padding:8px;width:100%;cursor:pointer;font-family:Arial;margin-top:4px">✓ Comi como no plano ('+Math.round(pm.k)+' kcal · P '+Math.round(pm.p)+'g)</button>';}
+    meals+='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:#181818;border-bottom:1px solid #282828"><div><span style="font-size:13px;font-weight:700;color:#d4ff00">'+S.h+'</span><span style="font-size:13px;font-weight:700;color:#f0f0f0;margin-left:8px">'+S.n+'</span></div><span style="font-size:11px;color:#aaa">'+(ents.length?Math.round(st.k)+' kcal · P '+Math.round(st.p)+'g':'--')+'</span></div><div class="cp" style="padding-top:2px;padding-bottom:8px">'+(rows||'<div style="font-size:12px;color:#555;padding:6px 0">Nada registrado.</div>')+planBtn+'</div></div>';
+  }
+  return '<div class="pg"><div class="ttl" style="margin-bottom:3px">DIETA</div><div class="lbl" style="margin-bottom:12px">Diario de hoje · metas do seu objetivo</div>'
+    +dietToggle()+top+form+meals+'</div>';
+}
 function rDieta(){
+  if(DB.dietView==="prev")return rDietaPrev();
+  if(DB.dietView!=="cut")return rFoodToday();
+  var tot={k:0,p:0,c:0,g:0},cards="";
+  for(var i=0;i<DIET_CUT.length;i++){
+    var m=DIET_CUT[i],mm=mealMacros(m.it),its="";
+    for(var j=0;j<m.it.length;j++)its+='<div style="font-size:12px;color:#aaa;padding:3px 0;border-bottom:1px solid #1a1a1a">'+m.it[j][2]+'</div>';
+    if(m.extra)its+='<div style="font-size:12px;color:#00e5ff;padding:3px 0">+ '+m.extra+'</div>';
+    if(m.alt)its+='<div style="font-size:11px;color:#555;padding:4px 0;font-style:italic">'+m.alt+'</div>';
+    tot.k+=mm.k;tot.p+=mm.p;tot.c+=mm.c;tot.g+=mm.g;
+    cards+='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#181818;border-bottom:1px solid #282828"><div><span style="font-size:14px;font-weight:700;color:#d4ff00">'+m.h+'</span><span style="font-size:13px;font-weight:700;color:#f0f0f0;margin-left:8px">'+m.n+'</span></div><span style="font-size:12px;font-weight:700;color:#aaa">'+Math.round(mm.k)+' kcal</span></div><div class="cp">'+its+'<div style="display:flex;gap:6px;margin-top:7px"><span style="font-size:10px;background:#1a1a1a;border-radius:4px;padding:2px 6px;color:#00e676">P: '+Math.round(mm.p)+'g</span><span style="font-size:10px;background:#1a1a1a;border-radius:4px;padding:2px 6px;color:#d4ff00">C: '+Math.round(mm.c)+'g</span><span style="font-size:10px;background:#1a1a1a;border-radius:4px;padding:2px 6px;color:#ff9100">G: '+Math.round(mm.g)+'g</span></div></div></div>';
+  }
+  function big(v,l,c){return '<div style="text-align:center;flex:1"><div style="font-size:20px;font-weight:900;color:'+c+'">'+v+'</div><div class="lbl">'+l+'</div></div>';}
+  var swaps='<div class="card cp" style="margin-bottom:10px"><div class="lbl" style="margin-bottom:6px">Trocas equivalentes</div><div style="font-size:12px;color:#aaa;line-height:1.7">'
+    +'• <b style="color:#f0f0f0">Proteina:</b> 100g de frango ≈ 90g de carne moida ≈ 125g de sobrecoxa (~32g de proteina). Sobrecoxa e carne moida tem mais calorias: se o peso parar de cair, va de frango.<br>'
+    +'• <b style="color:#f0f0f0">Carbo:</b> 100g de arroz ≈ 1 pao frances ≈ 30g de goma de tapioca (~28g de carbo).<br>'
+    +'• Pese tudo <b style="color:#f0f0f0">pronto/cozido</b> (so a goma de tapioca e pesada seca).</div></div>';
+  var tips='<div class="card cp" style="border-color:#ff9100;margin-bottom:10px"><div class="lbl" style="color:#ff9100;margin-bottom:6px">Como ajustar</div><div style="font-size:12px;color:#aaa;line-height:1.7">'
+    +'• Meta: perder <b style="color:#f0f0f0">0,5 a 0,7kg por semana</b> (pese em jejum, compare a media da semana).<br>'
+    +'• Parou de cair por 2 semanas? Tire ~150 kcal (ex.: 50g de arroz no jantar).<br>'
+    +'• Caindo mais de 1kg/semana? Adicione ~150 kcal, pra nao perder musculo.<br>'
+    +'• Isto e uma sugestao simples do app, nao uma prescricao. Alinhe com sua nutricionista.</div></div>';
+  return '<div class="pg"><div class="ttl" style="margin-bottom:3px">DIETA</div><div class="lbl" style="margin-bottom:12px">Corte simples · so alimentos que voce ja come</div>'
+    +dietToggle()
+    +'<div class="card" style="margin-bottom:14px"><div style="padding:10px 14px;background:#181818;border-bottom:1px solid #282828"><div class="lbl">Total Diario (aprox.)</div></div><div class="cp" style="display:flex;gap:8px;flex-wrap:wrap">'+big(Math.round(tot.k),"kcal","#f0f0f0")+big(Math.round(tot.p)+"g","proteina","#00e676")+big(Math.round(tot.c)+"g","carbo","#d4ff00")+big(Math.round(tot.g)+"g","gordura","#ff9100")+'</div></div>'
+    +cards+swaps+tips+'</div>';
+}
+function rDietaPrev(){
   var ref=[
     {h:"09:00",n:"Desjejum",it:["Pao frances: 2 un (100g)","Ovo cozido: 4 un (200g)","Cafe coado: 1 xic (200ml)","Banana: 1 un (40g)"],k:591,p:31.5,c:72.3,g:20.1},
     {h:"10:00",n:"Colacao",it:["Banana: 1 un grande (55g)","Aveia: 1 col sopa (15g)","Mel: 1 col sopa (15g)"],k:166,p:3,c:36.6,g:1.4},
@@ -715,14 +960,15 @@ function rDieta(){
     cards+='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#181818;border-bottom:1px solid #282828"><div><span style="font-size:14px;font-weight:700;color:#d4ff00">'+r.h+'</span><span style="font-size:13px;font-weight:700;color:#f0f0f0;margin-left:8px">'+r.n+'</span></div><span style="font-size:12px;font-weight:700;color:#aaa">'+r.k+' kcal</span></div><div class="cp">'+its+'<div style="display:flex;gap:6px;margin-top:7px"><span style="font-size:10px;background:#1a1a1a;border-radius:4px;padding:2px 6px;color:#00e676">P: '+r.p+'g</span><span style="font-size:10px;background:#1a1a1a;border-radius:4px;padding:2px 6px;color:#d4ff00">C: '+r.c+'g</span><span style="font-size:10px;background:#1a1a1a;border-radius:4px;padding:2px 6px;color:#ff9100">G: '+r.g+'g</span></div></div></div>';
   }
   return '<div class="pg"><div class="ttl" style="margin-bottom:3px">DIETA</div><div class="lbl" style="margin-bottom:12px">Nutricionista Sthefany Ouverney · CRN 22102949/P</div>'
+    +dietToggle()
     +'<div class="card" style="margin-bottom:14px"><div style="padding:10px 14px;background:#181818;border-bottom:1px solid #282828"><div class="lbl">Total Diario</div></div><div class="cp" style="display:flex;gap:8px;flex-wrap:wrap"><div style="text-align:center;flex:1"><div style="font-size:20px;font-weight:900;color:#f0f0f0">2955</div><div class="lbl">kcal</div></div><div style="text-align:center;flex:1"><div style="font-size:20px;font-weight:900;color:#00e676">229g</div><div class="lbl">proteina</div></div><div style="text-align:center;flex:1"><div style="font-size:20px;font-weight:900;color:#d4ff00">395g</div><div class="lbl">carbo</div></div><div style="text-align:center;flex:1"><div style="font-size:20px;font-weight:900;color:#ff9100">63g</div><div class="lbl">gordura</div></div></div></div>'
     +cards+'</div>';
 }
 
 // ── PERFIL ──
 function rProfile(){
-  var avalAll=AVAL_BASE.concat(DB.aval||[]);var last=avalAll.length?avalAll[avalAll.length-1]:null;var lW=last?last.peso:80.4;
-  var tmb=Math.round(88.36+13.4*lW+4.8*183-5.7*37);var tdee=Math.round(tmb*1.725);
+  var avalAll=AVAL_BASE.concat(DB.aval||[]);var last=avalAll.length?avalAll[avalAll.length-1]:null;var lwLog=DB.weights.length?DB.weights[DB.weights.length-1].val:null;var lW=lwLog||(last?last.peso:80.4);
+  var TG=calcTargets();var tmb=TG.tmb,tdee=TG.tdee,gg=TG.gg;
   var allDone=[],k;for(k in DB.done){if(DB.done[k]){var parts=k.split("_");var date=parts[parts.length-1];var id=parts.slice(0,-1).join("_");var dd=getDay(id);allDone.push({label:dd?dd.label:id,date:date,isCardio:dd&&dd.isCardio,id:id});}}
   allDone.sort(function(a,b){return b.date>a.date?1:b.date<a.date?-1:0;});
   var logH="";if(!allDone.length)logH='<div style="padding:12px 0;font-size:13px;color:#555">Nenhum treino registrado ainda.</div>';
@@ -732,13 +978,21 @@ function rProfile(){
     +'<div class="lbl" style="margin-bottom:6px">Log de Treinos ('+allDone.length+')</div><div class="card" style="padding:0 12px;margin-bottom:12px">'+logH+'</div>'
     +'<div class="lbl" style="margin-bottom:6px">Periodizacao</div><div class="card" style="padding:0 12px;margin-bottom:12px">'+tr("Semana Atual","Sem "+DB.week+" · "+WC[(DB.week-1)%4].name,true)+tr("Ciclos Completos",DB.cycleCount,false)+tr("Proximo Ciclo",WC[DB.week%4].name,false)+'</div>'
     +'<div class="lbl" style="margin-bottom:6px">Biometria</div><div class="card" style="padding:0 12px;margin-bottom:12px">'+tr("Nome","Diego",true)+tr("Altura","1,83m",false)+tr("Idade","37 anos",false)+(last?tr("Ultimo Peso",last.peso+"kg",true)+tr("Gordura",last.gord+"%",false)+tr("Massa Muscular",last.mm+"kg",true)+tr("MLG",last.mlg+"kg",false):"")+'</div>'
-    +'<div class="lbl" style="margin-bottom:6px">Nutricao (Referencia)</div><div class="card" style="padding:0 12px;margin-bottom:12px">'+tr("TMB",tmb+" kcal",false)+tr("TDEE 6x",tdee+" kcal",true)+tr("Meta +300",(tdee+300)+" kcal",false)+tr("Proteina ideal",Math.round(lW*2.4)+"g/dia",true)+tr("Agua","3,5L/dia",false)+'</div>'
+    +'<div class="lbl" style="margin-bottom:6px">Nutricao · peso base '+lW+'kg</div>'
+    +'<div class="card" style="padding:0 12px;margin-bottom:6px">'+tr("TMB",tmb+" kcal",false)+tr("TDEE (treino)",tdee+" kcal",true)+tr(gg.lbl,gg.kcal+" kcal",true)+tr("Proteina alvo",TG.p+"g/dia ("+gg.pro+"g/kg)",true)+tr("Carbo alvo",TG.c+"g/dia",false)+tr("Gordura alvo",TG.g+"g/dia",false)+tr("Agua","3,5L/dia",false)+'</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:12px">'
+    +'<button onclick="setGoal(\'cut\')" class="tab-btn'+(DB.goal==="cut"?" on":"")+'" style="flex:1">Corte</button>'
+    +'<button onclick="setGoal(\'manut\')" class="tab-btn'+(DB.goal==="manut"?" on":"")+'" style="flex:1">Manutencao</button>'
+    +'<button onclick="setGoal(\'bulk\')" class="tab-btn'+(DB.goal==="bulk"?" on":"")+'" style="flex:1">Bulk</button>'
+    +'</div>'
     +'<button onclick="doBackup()" class="btn btnd">Exportar Backup JSON</button>'
     +'<button onclick="doRestore()" class="btn btncyan" style="margin-top:6px">Importar Backup JSON</button>'
     +'<input type="file" id="restoreFile" accept="application/json,.json" style="display:none" onchange="handleRestore(this)">'
-    +'<button onclick="if(confirm(\'Apagar TUDO?\')){{localStorage.removeItem(\''+SK+'\');location.reload();}}" class="btn btnr" style="margin-top:6px">Resetar dados</button></div>';
+    +'<button onclick="if(confirm(\'Apagar TUDO?\')){{localStorage.removeItem(\''+SK+'\');location.reload();}}" class="btn btnr" style="margin-top:6px">Resetar dados</button>'
+    +'<div style="text-align:center;font-size:10px;color:#444;margin-top:14px;word-break:break-all">Versao '+APP_VER+' · '+(typeof location!=="undefined"&&location.host?location.host:"local")+'</div></div>';
 }
 
+function setGoal(g){DB.goal=g;save();render();}
 function doBackup(){
   try{var data=JSON.stringify(DB,null,2);var blob=new Blob([data],{type:"application/json"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="diego-training-"+tod()+".json";document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast("Backup exportado!");}catch(e){toast("Erro: "+e.message);}
 }
@@ -750,8 +1004,7 @@ function handleRestore(inp){
     try{
       var p=JSON.parse(r.result);if(!p||typeof p!=="object"||p.done===undefined&&p.sets===undefined)throw new Error("arquivo nao parece um backup");
       if(!confirm("Isso vai SUBSTITUIR todos os dados atuais pelos do backup. Continuar?")){inp.value="";return;}
-      var keys=["week","cycleCount","lastDoneId","sets","done","obs","weights","prs","hist","aval","days","selEx","earnedAch","maxVol","trainStart","cycle","progVer"];
-      for(var i=0;i<keys.length;i++){if(p[keys[i]]!==undefined)DB[keys[i]]=p[keys[i]];}
+      for(var i=0;i<KEYS.length;i++){if(p[KEYS[i]]!==undefined)DB[KEYS[i]]=p[KEYS[i]];}
       save();toast("Backup restaurado!");curDay="";go(0);
     }catch(e){toast("Erro: "+e.message);}
     inp.value="";
