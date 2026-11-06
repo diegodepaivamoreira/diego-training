@@ -566,6 +566,9 @@ function rTreino(){
       var sH="";
       for(var s=0;s<n;s++){
         var sv=getS(curDay,ti,ei,s);
+        // Bi/tri-set: sem descanso entre os exercicios do grupo; depois do ultimo, descansa e volta pro primeiro
+        var grp=!ts.single&&ts.ex.length>1;var rsv=grp&&ei<ts.ex.length-1?0:restFor(ts);
+        var nxs=grp&&ei===ts.ex.length-1&&s<n-1?ts.ex[0].n.replace(/'/g,""):nxS;
         // Detecção de regressão
         var regTxt="";if(sv.kg&&sv.reps&&lastH&&sv.done){if(parseFloat(sv.kg)<lastH.kg)regTxt='<span class="reg">↓ carga</span>';}
         sH+='<div style="display:inline-flex;align-items:center;gap:4px;background:#0a0a0a;border:1px solid '+(sv.done?"#00e676":"#282828")+';border-radius:8px;padding:5px 6px;margin:2px">'
@@ -573,7 +576,7 @@ function rTreino(){
           +'<input type="number" inputmode="decimal" placeholder="'+(lastH?lastH.kg:"kg")+'" value="'+(sv.kg||"")+'" onchange="setS(\''+curDay+'\','+ti+','+ei+','+s+',\'kg\',this.value)">'
           +'<span style="font-size:9px;color:#333">x</span>'
           +'<input type="number" inputmode="numeric" placeholder="'+(lastH?lastH.reps:"rep")+'" value="'+(sv.reps||"")+'" onchange="setS(\''+curDay+'\','+ti+','+ei+','+s+',\'reps\',this.value)">'
-          +'<button class="ck'+(sv.done?" ckon":"")+'" onclick="togS(\''+curDay+'\','+ti+','+ei+','+s+',\''+nxS+'\',\''+ex.n.replace(/'/g,"")+'\','+restFor(ts)+')">v</button>'
+          +'<button class="ck'+(sv.done?" ckon":"")+'" onclick="togS(\''+curDay+'\','+ti+','+ei+','+s+',\''+nxs+'\',\''+ex.n.replace(/'/g,"")+'\','+rsv+')">v</button>'
           +regTxt+'</div>';
       }
       var prTxt=pr?'<span style="font-size:10px;color:#ff9100;margin-left:4px">PR: '+pr.kg+'kg×'+pr.reps+'</span>':"";
@@ -616,7 +619,9 @@ function rTreino(){
 function restFor(ts){return ts&&ts.label==="Composto Pesado"?150:wk().rest;}
 function togS(d,ti,ei,si,nx,exName,rs){
   var sv=getS(d,ti,ei,si);var nv=!sv.done;setS(d,ti,ei,si,"done",nv);
-  if(nv){var s2=getS(d,ti,ei,si);var isPR=checkPR(exName,s2.kg,s2.reps);startT(nx,isPR?"🏆 PR! "+exName:"",rs);}
+  if(nv){var s2=getS(d,ti,ei,si);var isPR=checkPR(exName,s2.kg,s2.reps);
+    if(rs>0)startT(nx,isPR?"🏆 PR! "+exName:"",rs);
+    else toast((isPR?"🏆 PR! "+exName+" · ":"")+"Sem descanso: "+(nx||"proximo"));}
   render();
 }
 function togDone(id){
