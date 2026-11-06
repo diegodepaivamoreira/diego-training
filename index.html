@@ -150,57 +150,36 @@ var ACHIEV=[
 
 var DEFAULT_DAYS={
   push:{id:"push",label:"PUSH",short:"Push",sub:"Peito, Ombro e Triceps",trisets:[
-    {label:"Composto Pesado",single:true,ex:[{n:"Supino Reto com Barra",t:"PESADO: 3-4 series de 6-8 reps. Desca ate 1cm do esterno. Descanso 2-3 min. Progrida a carga."}]},
-    {label:"Tri-set 1 Peito",ex:[{n:"Supino Inclinado com Halteres",t:"Banco a 45 graus. Alongue bem o peito embaixo."},{n:"Crossover Polia Alta",t:"Cruze as maos na frente. Aperte 1s."},{n:"Voador Peck Deck",t:"Tensao constante, sem bater os pesos."}]},
-    {label:"Tri-set 2 Ombro",ex:[{n:"Desenvolvimento com Halteres",t:"Sentado. Empurre acima da cabeca."},{n:"Elevacao Lateral Halteres",t:"Polegar leve pra baixo. Ate a linha do ombro."},{n:"Elevacao Lateral na Polia",t:"Unilateral, tensao constante."}]},
-    {label:"Tri-set 3 Triceps",ex:[{n:"Triceps Corda na Polia",t:"Separe a corda no final. Extensao total."},{n:"Triceps Testa Barra W",t:"Cotovelos fixos apontando pra cima."},{n:"Triceps Frances Unilateral",t:"Alongamento atras da cabeca."}]}
+    {label:"Composto Pesado",single:true,ex:[{n:"Supino Reto com Barra",t:"PESADO: 3 series de 6-8 reps, perto da falha. Antes, 2 series de aquecimento leves. Desca ate 1cm do esterno. Descanso 2-3 min."}]},
+    {label:"Bi-set 1 Peito e Ombro",ex:[{n:"Supino Inclinado com Halteres",t:"Banco a 30-45 graus. Alongue bem o peito embaixo. Vai direto pro proximo."},{n:"Elevacao Lateral Halteres",t:"Ate a linha do ombro, sem roubar. Descansa depois desse."}]},
+    {label:"Bi-set 2 Peito e Triceps",ex:[{n:"Crossover Polia Alta",t:"Cruze as maos na frente e aperte 1s. Mesma estacao do triceps."},{n:"Triceps Corda na Polia",t:"Separe a corda no final. Extensao total. Descansa depois desse."}]}
   ]},
   pull:{id:"pull",label:"PULL",short:"Pull",sub:"Costas, Post. de Ombro e Biceps",trisets:[
-    {label:"Composto Pesado",single:true,ex:[{n:"Remada Curvada com Barra",t:"PESADO: 3-4 series de 6-8 reps. Tronco a 45 graus, puxe ate o umbigo. Descanso 2-3 min."}]},
-    {label:"Tri-set 1 Costas Largura",ex:[{n:"Barra Fixa Pronada",t:"Pegada larga. Amplitude total, assistida se precisar."},{n:"Puxada Frente na Polia",t:"Peito estufado, puxe com os cotovelos."},{n:"Pullover na Polia Alta",t:"Bracos quase retos. Sinta o dorsal alongar."}]},
-    {label:"Tri-set 2 Costas e Post. Ombro",ex:[{n:"Remada Unilateral Halter",t:"Apoie o joelho. Puxe ate o quadril."},{n:"Remada Baixa Polia Neutra",t:"Nao use impulso do tronco."},{n:"Crucifixo Inverso Maquina",t:"Foco no deltoide posterior. Ate paralelo ao solo."}]},
-    {label:"Tri-set 3 Biceps",ex:[{n:"Rosca Direta com Barra",t:"Sem balancar o corpo. Supinacao total."},{n:"Rosca Scott",t:"Amplitude total, cadencia lenta."},{n:"Rosca Martelo Halteres",t:"Trabalha braquial e antebraco."}]}
+    {label:"Composto Pesado",single:true,ex:[{n:"Remada Curvada com Barra",t:"PESADO: 3 series de 6-8 reps. Tronco a 45 graus, puxe ate o umbigo. Aquecimento antes. Descanso 2-3 min."}]},
+    {label:"Bi-set 1 Costas",ex:[{n:"Puxada Frente na Polia",t:"Peito estufado, puxe com os cotovelos ate a clavicula. Vai direto pro proximo."},{n:"Remada Baixa Polia Neutra",t:"Sem impulso do tronco. Aperte as escapulas. Descansa depois desse."}]},
+    {label:"Bi-set 2 Biceps e Post. Ombro",ex:[{n:"Rosca Direta com Barra",t:"Sem balancar o corpo. Descida controlada. Vai direto pro proximo."},{n:"Crucifixo Inverso Maquina",t:"Foco no deltoide posterior, cotovelo levemente flexionado. Descansa depois desse."}]}
   ]},
   legs:{id:"legs",label:"LEGS",short:"Legs",sub:"Pernas (enfase Quadriceps)",trisets:[
-    {label:"Composto Pesado",single:true,ex:[{n:"Agachamento Livre com Barra",t:"PESADO: 3-4 series de 6-8 reps. Desca ate 90 graus, joelhos alinhados. Descanso 2-3 min. O rei das pernas."}]},
-    {label:"Quadriceps",single:true,ex:[
-      {n:"Leg Press 45",t:"Pes na largura do ombro. Amplitude total."},
-      {n:"Agachamento Hack",t:"Foco no quadriceps. Desca controlado."},
-      {n:"Cadeira Extensora",t:"Descida lenta 3s. Pausa 1s no topo."}
-    ]},
-    {label:"Posterior e Gluteo",single:true,ex:[
-      {n:"Mesa Flexora",t:"Quadril encaixado. Contracao total."},
-      {n:"Cadeira Abdutora",t:"Controle a volta, incline o tronco a frente."}
-    ]},
-    {label:"Panturrilha",single:true,ex:[{n:"Panturrilha em Pe",t:"5x15-20. Pausa 1s no alto e no baixo."}]}
+    {label:"Composto Pesado",single:true,ex:[{n:"Agachamento Livre com Barra",t:"PESADO: 3 series de 6-8 reps. 2-3 series de aquecimento antes. Desca ate 90 graus ou abaixo, joelhos alinhados. Descanso 2-3 min."}]},
+    {label:"Bi-set 1 Quadriceps e Posterior",ex:[{n:"Leg Press 45",t:"Pes na largura do ombro. Amplitude total, sem travar o joelho. Vai direto pro proximo."},{n:"Mesa Flexora",t:"Quadril encaixado. Contracao total, descida 2s. Descansa depois desse."}]},
+    {label:"Bi-set 2 Quadriceps e Panturrilha",ex:[{n:"Cadeira Extensora",t:"Descida lenta 3s. Pausa 1s no topo. Vai direto pro proximo."},{n:"Panturrilha em Pe",t:"12-20 reps. Pausa 1s no alto e no baixo. Descansa depois desse."}]}
   ]},
   upper:{id:"upper",label:"UPPER",short:"Up",sub:"Superiores (angulos diferentes)",trisets:[
-    {label:"Composto Pesado",single:true,ex:[{n:"Desenvolvimento com Barra",t:"PESADO: 3-4 series de 6-8 reps. Barra ate o queixo, empurre acima da cabeca. Descanso 2-3 min."}]},
-    {label:"Tri-set 1 Empurra e Puxa",ex:[{n:"Supino Declinado Maquina",t:"Empurra e segura a contracao 1s."},{n:"Puxada Triangulo Neutra",t:"Pegada fechada neutra. Puxe ao peito."},{n:"Voador Inverso na Polia",t:"Deltoide posterior, tensao constante."}]},
-    {label:"Tri-set 2 Espessura",ex:[{n:"Crucifixo Inclinado Halteres",t:"Alongamento maximo embaixo."},{n:"Remada Cavalinho T-Bar",t:"Aperte as escapulas atras."},{n:"Encolhimento com Halteres",t:"Trapezio. Segura 1s no topo."}]},
-    {label:"Tri-set 3 Bracos",ex:[{n:"Rosca Alternada Halteres",t:"Rotacao do punho na subida."},{n:"Triceps Pulley Barra",t:"Cotovelos junto ao corpo. Extensao total."},{n:"Rosca Concentrada",t:"Isola o pico do biceps."}]}
+    {label:"Composto Pesado",single:true,ex:[{n:"Desenvolvimento com Barra",t:"PESADO: 3 series de 6-8 reps. Barra ate o queixo, empurre acima da cabeca, core travado. Descanso 2-3 min."}]},
+    {label:"Bi-set 1 Empurra e Puxa",ex:[{n:"Supino Declinado Maquina",t:"Empurra e segura a contracao 1s. Vai direto pro proximo."},{n:"Puxada Triangulo Neutra",t:"Pegada fechada neutra. Puxe ao peito. Descansa depois desse."}]},
+    {label:"Bi-set 2 Bracos",ex:[{n:"Rosca Alternada Halteres",t:"Rotacao do punho na subida. Vai direto pro proximo."},{n:"Triceps Pulley Barra",t:"Cotovelos junto ao corpo. Extensao total. Descansa depois desse."}]}
   ]},
   lower:{id:"lower",label:"LOWER",short:"Low",sub:"Pernas (enfase Posterior e Gluteo)",trisets:[
-    {label:"Composto Pesado",single:true,ex:[{n:"Stiff com Barra",t:"PESADO: 3-4 series de 6-8 reps. Joelho leve flexionado, empurre o quadril pra tras. Sinta o posterior. Descanso 2-3 min."}]},
-    {label:"Posterior e Gluteo",single:true,ex:[
-      {n:"Cadeira Flexora",t:"Descida lenta 3s."},
-      {n:"Mesa Flexora",t:"Quadril encaixado, contracao total."},
-      {n:"Elevacao Pelvica com Barra",t:"Hip thrust. Aperte o gluteo no topo 1s."}
-    ]},
-    {label:"Quadriceps e Adutor",single:true,ex:[
-      {n:"Leg Press Pes Altos",t:"Pes altos e afastados p/ posterior e gluteo."},
-      {n:"Cadeira Adutora",t:"Pressao constante."}
-    ]},
-    {label:"Panturrilha e Core",single:true,ex:[{n:"Panturrilha Sentado",t:"3x15. Foco no soleo, amplitude total."},{n:"Abdominal Infra no Banco",t:"3x15. Joelhos dobrados."}]}
+    {label:"Composto Pesado",single:true,ex:[{n:"Stiff com Barra",t:"PESADO: 3 series de 6-8 reps. Joelho levemente flexionado, empurre o quadril pra tras, coluna neutra. Descanso 2-3 min."}]},
+    {label:"Bi-set 1 Gluteo e Posterior",ex:[{n:"Elevacao Pelvica com Barra",t:"Hip thrust. Aperte o gluteo no topo 1s. Vai direto pro proximo."},{n:"Cadeira Flexora",t:"Descida lenta 3s. Descansa depois desse."}]},
+    {label:"Bi-set 2 Leg e Panturrilha",ex:[{n:"Leg Press Pes Altos",t:"Pes altos e afastados p/ posterior e gluteo. Vai direto pro proximo."},{n:"Panturrilha Sentado",t:"12-20 reps. Foco no soleo, amplitude total. Descansa depois desse."}]}
   ]},
   cardio:{id:"cardio",label:"CARDIO",short:"Card",sub:"Cardio e Abdome",isCardio:true,trisets:[
-    {label:"Cardio",single:true,ex:[{n:"Esteira Inclinada ou Escada",t:"CORTE: 30-40 min zona 2 (FC 120-140), 3-4x/sem. Em jejum ou pos-treino de forca."},{n:"HIIT (opcional)",t:"1-2x/sem: 10-15 min. 30s forte / 90s leve. Evite no mesmo dia de pernas pesado."}]},
+    {label:"Cardio",single:true,ex:[{n:"Esteira Inclinada ou Escada",t:"CORTE: 20-30 min zona 2 (FC 120-140). Pode ser pos-treino de forca."},{n:"HIIT (opcional)",t:"1-2x/sem: 10-15 min. 30s forte / 90s leve. Evite no mesmo dia de pernas pesado."}]},
     {label:"Abdome",single:true,ex:[
-      {n:"Abdominal Supra",t:"3x20."},
-      {n:"Elevacao de Pernas",t:"3x15."},
-      {n:"Prancha Frontal",t:"3x45s."},
-      {n:"Obliquo Bicicleta",t:"3x20 alternados."},
-      {n:"Hollow Body Hold",t:"2x30s."}
+      {n:"Abdominal Supra",t:"3x15-20."},
+      {n:"Elevacao de Pernas",t:"3x12-15."},
+      {n:"Prancha Frontal",t:"3x45s."}
     ]}
   ]}
 };
@@ -212,7 +191,7 @@ var AVAL_BASE=[
 ];
 
 var SK="dtv5";
-var APP_VER="2026-10-11 diario";
+var APP_VER="2026-11-06 enxuto";
 var DB={week:1,cycleCount:0,lastDoneId:null,sets:{},done:{},obs:{},weights:[],prs:{},hist:{},aval:[],days:null,selEx:"",earnedAch:[],maxVol:0,trainStart:null,cycle:{},progVer:0,measures:[],migratedV3:false,goal:"cut",snap:{},setsVer:0,dietView:"today",food:{}};
 var KEYS=["week","cycleCount","lastDoneId","sets","done","obs","weights","prs","hist","aval","days","selEx","earnedAch","maxVol","trainStart","cycle","progVer","measures","migratedV3","goal","snap","setsVer","dietView","food"];
 
@@ -226,8 +205,14 @@ function load(){
         if(DB.lastDoneId){var idx=MAIN_SEQ.indexOf(DB.lastDoneId);for(var m=0;m<=idx;m++){DB.cycle[MAIN_SEQ[m]]=lastDoneDate(MAIN_SEQ[m])||tod();}}
         save();
       }
-      // Programa novo (v3 PPLUL): descarta treinos personalizados antigos p/ carregar o programa atualizado.
-      if(DB.progVer<3){DB.days=null;DB.progVer=3;save();}
+      // Programa novo (v4 PPLUL enxuto: composto + 2 bi-sets): descarta treinos personalizados antigos
+      // e limpa series em andamento (os indices mudaram); historico de cargas por exercicio fica em DB.hist.
+      if(DB.progVer<4){
+        DB.days=null;DB.progVer=4;
+        var pids=MAIN_SEQ.concat(["cardio"]);
+        for(var pi=0;pi<pids.length;pi++){if(isDoneToday(pids[pi]))continue;var ppre=pids[pi]+"_";for(var pk in DB.sets){if(pk.indexOf(ppre)===0)delete DB.sets[pk];}}
+        save();
+      }
       // Migracao v1: series de treinos ja concluidos ficavam preenchidas pra sempre. Limpa uma vez (o historico fica em DB.hist).
       if(!DB.setsVer){
         var allIds=MAIN_SEQ.concat(["cardio"]);
@@ -570,7 +555,7 @@ function rTreino(){
   var timeStr="";if(DB.trainStart){var el=Math.round((Date.now()-DB.trainStart)/60000);timeStr='<div style="font-size:11px;color:#555;margin-left:6px">⏱ '+el+' min</div>';}
   var body="";
   for(var ti=0;ti<day.trisets.length;ti++){
-    var ts=day.trisets[ti];var badge=ts.single?"SERIE":day.isCardio?"CARDIO":"TRI-SET";var bbg=ts.single?"#1a1a1a":day.isCardio?"#00e5ff":"#d4ff00";var btc=ts.single?"#555":"#000";var exH="";
+    var ts=day.trisets[ti];var badge=ts.single?"SERIE":day.isCardio?"CARDIO":(ts.ex.length===2?"BI-SET":"TRI-SET");var bbg=ts.single?"#1a1a1a":day.isCardio?"#00e5ff":"#d4ff00";var btc=ts.single?"#555":"#000";var exH="";
     for(var ei=0;ei<ts.ex.length;ei++){
       var ex=ts.ex[ei];var n=ns(ts);var drop=W.drop&&!ts.single&&ei===ts.ex.length-1;
       var nx=ei+1<ts.ex.length?ts.ex[ei+1].n:(ti+1<day.trisets.length&&day.trisets[ti+1].ex.length?day.trisets[ti+1].ex[0].n:"");
